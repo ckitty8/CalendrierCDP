@@ -7,12 +7,15 @@ calculs) est généré à la demande pour archivage / dépôt dans ton Drive.
 
 ## Stack
 
-- **server/** — Express + TypeScript. La donnée vit dans `server/data/store.xlsx`,
-  un classeur Excel (lu/écrit avec `exceljs`) qui sert de base de données —
-  conformément à "je stocke en Excel pour le moment". Au premier démarrage,
-  ce fichier est généré depuis `server/data/seed.json` (extrait du fichier
-  original que tu as fourni).
+- **server/** — Express + TypeScript. La donnée vit dans un classeur Excel
+  (lu/écrit avec `exceljs`) qui sert de base de données — conformément à "je
+  stocke en Excel pour le moment". Au premier démarrage, ce fichier est généré
+  depuis `server/src/data/seed.ts` (extrait du fichier original que tu as
+  fourni). Stockage : fichier local `server/data/store.xlsx` en dev, **Vercel
+  Blob** en production (voir plus bas) — bascule automatique selon la présence
+  de la variable d'env `BLOB_READ_WRITE_TOKEN`.
 - **client/** — React + Vite + TypeScript + Tailwind.
+- **api/** — point d'entrée Vercel Serverless Function (réexporte l'app Express).
 
 Le jour où tu veux basculer sur Supabase, seule la couche `server/src/xlsx/store.ts`
 (fonctions `loadState`/`saveState`) doit changer — le reste de l'app (calc engine,
@@ -26,6 +29,24 @@ npm run dev            # lance l'API (port 4000) et le front (port 5173)
 ```
 
 Puis ouvrir http://localhost:5173. Le front proxifie `/api` vers `localhost:4000`.
+
+## Déployer sur Vercel
+
+Le repo est prêt pour un déploiement "Other framework" sur Vercel :
+`vercel.json` build le front (`client/dist`) et route `/api/*` vers la fonction
+serverless `api/index.ts` (qui réexporte l'app Express).
+
+1. Importer le repo GitHub dans Vercel (New Project → sélectionner `ckitty8/CalendrierCDP`
+   → branche à déployer).
+2. Ajouter le **Blob storage** au projet (onglet *Storage* → *Create* → *Blob*) :
+   Vercel injecte automatiquement la variable `BLOB_READ_WRITE_TOKEN`, qui active le
+   stockage persistant du classeur Excel en production (sans ça, l'app tourne mais
+   perd ses données à chaque redéploiement/cold start puisque le disque des fonctions
+   serverless n'est pas persistant).
+3. Déployer.
+
+Au premier démarrage en prod, l'app bootstrape automatiquement le classeur depuis les
+données d'origine (`server/src/data/seed.ts`), exactement comme en local.
 
 ## Pages
 

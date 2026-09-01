@@ -1,17 +1,7 @@
 import ExcelJS from "exceljs";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import type { AppState, DayEntry, Employee, Estimation, Sprint, SprintTarget, TicketDefRow, TicketType } from "../types.js";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(__dirname, "../../data");
-const STORE_PATH = path.join(DATA_DIR, "store.xlsx");
-const SEED_PATH = path.join(DATA_DIR, "seed.json");
-
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+import { readStoreBytes, writeStoreBytes } from "./blobBackend.js";
+import seed from "../data/seed.js";
 
 function headerRow(ws: ExcelJS.Worksheet, keys: string[]) {
   ws.addRow(keys);
@@ -19,7 +9,6 @@ function headerRow(ws: ExcelJS.Worksheet, keys: string[]) {
 }
 
 export async function saveState(state: AppState): Promise<void> {
-  ensureDataDir();
   const wb = new ExcelJS.Workbook();
 
   const meta = wb.addWorksheet("Meta");
@@ -65,24 +54,23 @@ export async function saveState(state: AppState): Promise<void> {
   headerRow(est, ["sprintId", "ticketTypeId", "estimatedJH", "spentJH"]);
   for (const e of state.estimations) est.addRow([e.sprintId, e.ticketTypeId, e.estimatedJH, e.spentJH]);
 
-  const tmpPath = STORE_PATH + ".tmp";
-  await wb.xlsx.writeFile(tmpPath);
-  fs.renameSync(tmpPath, STORE_PATH);
+  const buffer = await wb.xlsx.writeBuffer();
+  await writeStoreBytes(Buffer.from(buffer));
 }
 
 export async function loadState(): Promise<AppState> {
-  ensureDataDir();
-  if (!fs.existsSync(STORE_PATH)) {
-    if (!fs.existsSync(SEED_PATH)) {
-      throw new Error(`Aucun store.xlsx ni seed.json trouvé dans ${DATA_DIR}`);
-    }
-    const seed = JSON.parse(fs.readFileSync(SEED_PATH, "utf-8")) as AppState;
+  const bytes = await readStoreBytes();
+  if (!bytes) {
     await saveState(seed);
     return seed;
   }
 
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.readFile(STORE_PATH);
+  // exceljs redéclare globalement `interface Buffer extends ArrayBuffer {}`, ce qui entre en
+  // conflit avec le vrai Buffer (Uint8Array) de @types/node — bug de typage connu du package,
+  // sans effet à l'exécution (bytes est un Buffer Node standard).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await wb.xlsx.load(bytes as any);
 
   const readRows = (name: string): Record<string, unknown>[] => {
     const ws = wb.getWorksheet(name);
@@ -174,8 +162,4 @@ export async function loadState(): Promise<AppState> {
     sprintTargets,
     estimations,
   };
-}
-
-export function storeFilePath(): string {
-  return STORE_PATH;
 }
