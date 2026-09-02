@@ -40,9 +40,8 @@ function cellKey(employeeId: string, date: string): string {
 export default function Planning() {
   const { state, refresh } = useAppState();
   const [month, setMonth] = useState(new Date().getUTCMonth() + 1);
-  const [selected, setSelected] = useState<{ employeeId: string; date: string } | null>(null);
-  const [multiMode, setMultiMode] = useState(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [anchor, setAnchor] = useState<{ employeeId: string; date: string } | null>(null);
   const [bulkStatusKey, setBulkStatusKey] = useState(DEFAULT_BULK_KEY);
   const [saving, setSaving] = useState(false);
 
@@ -58,28 +57,57 @@ export default function Planning() {
 
   const employees = state!.employees;
 
-  function resetSelections() {
-    setSelected(null);
+  function clearSelection() {
     setSelection(new Set());
+    setAnchor(null);
   }
 
-  function toggleMultiMode() {
-    setMultiMode((v) => !v);
-    resetSelections();
-  }
+  // Clic = sélectionner une seule case ; Ctrl/Cmd+clic = ajouter/retirer une case (comme
+  // Excel) ; Shift+clic = sélectionner le rectangle entre la dernière case cliquée et
+  // celle-ci (personnes × jours).
+  function handleCellClick(e: React.MouseEvent, employeeId: string, date: string) {
+    if (isWeekend(date)) return;
+    const key = cellKey(employeeId, date);
 
-  function toggleCellSelection(employeeId: string, date: string) {
-    if (multiMode) {
+    if (e.shiftKey && anchor) {
+      const empIdxA = employees.findIndex((x) => x.id === anchor.employeeId);
+      const empIdxB = employees.findIndex((x) => x.id === employeeId);
+      const dateIdxA = dates.indexOf(anchor.date);
+      const dateIdxB = dates.indexOf(date);
+      if (empIdxA === -1 || dateIdxA === -1) {
+        setSelection(new Set([key]));
+        setAnchor({ employeeId, date });
+        return;
+      }
+      const empLo = Math.min(empIdxA, empIdxB);
+      const empHi = Math.max(empIdxA, empIdxB);
+      const dateLo = Math.min(dateIdxA, dateIdxB);
+      const dateHi = Math.max(dateIdxA, dateIdxB);
+      const next = new Set<string>();
+      for (let ei = empLo; ei <= empHi; ei++) {
+        for (let di = dateLo; di <= dateHi; di++) {
+          const d = dates[di];
+          if (isWeekend(d)) continue;
+          next.add(cellKey(employees[ei].id, d));
+        }
+      }
+      setSelection(next);
+      return;
+    }
+
+    if (e.ctrlKey || e.metaKey) {
       setSelection((prev) => {
         const next = new Set(prev);
-        const key = cellKey(employeeId, date);
         if (next.has(key)) next.delete(key);
         else next.add(key);
         return next;
       });
-    } else {
-      setSelected({ employeeId, date });
+      setAnchor({ employeeId, date });
+      return;
     }
+
+    setSelection(new Set([key]));
+    setAnchor({ employeeId, date });
   }
 
   async function handleStatusChange(employeeId: string, date: string, optionKey: string) {
@@ -114,7 +142,7 @@ export default function Planning() {
         await api.setDaysBulk(cells, { value: option.value as DayValue, category: option.category as DayCategory });
       }
       await refresh();
-      setSelection(new Set());
+      clearSelection();
     } finally {
       setSaving(false);
     }
@@ -159,6 +187,11 @@ export default function Planning() {
     }
   }
 
+  const selectedSingle = selection.size === 1 ? Array.from(selection)[0] : null;
+  const selectedSingleCell = selectedSingle
+    ? { employeeId: selectedSingle.split("|")[0], date: selectedSingle.split("|")[1] }
+    : null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -169,7 +202,7 @@ export default function Planning() {
               key={label}
               onClick={() => {
                 setMonth(i + 1);
-                resetSelections();
+                clearSelection();
               }}
               className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                 month === i + 1 ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -182,14 +215,6 @@ export default function Planning() {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={toggleMultiMode}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium border ${
-            multiMode ? "bg-brand-600 text-white border-brand-600" : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"
-          }`}
-        >
-          {multiMode ? "Sélection multiple activée" : "Activer la sélection multiple"}
-        </button>
         <button
           disabled={saving}
           onClick={() => fillPresence(emptyWeekdayCellsForMonth())}
@@ -205,7 +230,7 @@ export default function Planning() {
           Remplir l'année en Présence
         </button>
         <span className="text-xs text-slate-400">
-          Les jours ouvrés sans saisie sont mis à Présence (1j) ; les jours déjà renseignés ne sont pas modifiés.
+          Ctrl/Cmd+clic pour sélectionner plusieurs jours, Shift+clic pour une plage (comme Excel).
         </span>
       </div>
 
@@ -221,7 +246,7 @@ export default function Planning() {
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm select-none">
         <table className="border-collapse">
           <thead>
             <tr>
@@ -252,21 +277,18 @@ export default function Planning() {
                   const entry = dayIndex.get(cellKey(emp.id, d));
                   const weekend = isWeekend(d);
                   const key = cellKey(emp.id, d);
-                  const isSingleSelected = !multiMode && selected?.employeeId === emp.id && selected?.date === d;
-                  const isMultiSelected = multiMode && selection.has(key);
+                  const isSelected = selection.has(key);
                   return (
                     <td
                       key={d}
                       className={`border-b border-l border-slate-100 text-center align-middle w-8 h-9 text-xs ${
                         weekend ? "bg-slate-50" : "cursor-pointer hover:ring-2 hover:ring-brand-300"
-                      } ${isSingleSelected ? "ring-2 ring-brand-500" : ""} ${
-                        isMultiSelected ? "ring-2 ring-emerald-500" : ""
-                      }`}
+                      } ${isSelected ? "ring-2 ring-brand-500" : ""}`}
                       style={{ background: !weekend && entry ? CATEGORY_COLORS[entry.category] : undefined }}
-                      onClick={() => {
-                        if (weekend) return;
-                        toggleCellSelection(emp.id, d);
+                      onMouseDown={(e) => {
+                        if (e.shiftKey) e.preventDefault(); // évite la sélection de texte du navigateur
                       }}
+                      onClick={(e) => handleCellClick(e, emp.id, d)}
                     >
                       {!weekend && entry ? entry.value : ""}
                     </td>
@@ -278,7 +300,7 @@ export default function Planning() {
         </table>
       </div>
 
-      {multiMode && selection.size > 0 && (
+      {selection.size > 1 && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-3 flex-wrap sticky bottom-4 shadow-md">
           <span className="text-sm font-medium text-slate-800">{selection.size} jour(s) sélectionné(s)</span>
           <select
@@ -302,7 +324,7 @@ export default function Planning() {
           </button>
           <button
             disabled={saving}
-            onClick={() => setSelection(new Set())}
+            onClick={clearSelection}
             className="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-slate-300 text-slate-500 hover:bg-slate-100"
           >
             Tout désélectionner
@@ -310,14 +332,14 @@ export default function Planning() {
         </div>
       )}
 
-      {!multiMode && selected && (
+      {selectedSingleCell && (
         <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 space-y-3">
           <div className="text-sm font-medium text-slate-800">
             {(() => {
-              const emp = employees.find((e) => e.id === selected.employeeId);
+              const emp = employees.find((e) => e.id === selectedSingleCell.employeeId);
               return emp ? fullName(emp) : "";
             })()} —{" "}
-            {new Date(selected.date + "T00:00:00Z").toLocaleDateString("fr-FR", {
+            {new Date(selectedSingleCell.date + "T00:00:00Z").toLocaleDateString("fr-FR", {
               weekday: "long",
               day: "2-digit",
               month: "long",
@@ -326,10 +348,10 @@ export default function Planning() {
           <select
             disabled={saving}
             value={(() => {
-              const entry = dayIndex.get(cellKey(selected.employeeId, selected.date));
+              const entry = dayIndex.get(cellKey(selectedSingleCell.employeeId, selectedSingleCell.date));
               return entry ? `${entry.value}|${entry.category}` : "clear";
             })()}
-            onChange={(e) => handleStatusChange(selected.employeeId, selected.date, e.target.value)}
+            onChange={(e) => handleStatusChange(selectedSingleCell.employeeId, selectedSingleCell.date, e.target.value)}
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm min-w-[260px] disabled:opacity-50"
           >
             {STATUS_OPTIONS.map((opt) => (
