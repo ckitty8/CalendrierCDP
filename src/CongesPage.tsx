@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import type { DayEntry } from "./types";
-import { MONTH_LABELS, daysInMonth, frenchPublicHolidays, fullName, isWeekend, isoDate } from "./lib";
+import { MONTH_LABELS, daysInMonth, fullName, isoDate } from "./lib";
 import type { PlanningState } from "./usePlanningState";
 
 interface CongesPageProps {
@@ -9,36 +9,37 @@ interface CongesPageProps {
 }
 
 interface MonthStats {
-  joursOuvres: number;
   travaille: number;
   conges: number;
 }
 
-function computeMonthStats(
-  employeeId: string,
-  year: number,
-  month: number,
-  dayIndex: Map<string, DayEntry>,
-  holidaySet: Set<string>
-): MonthStats {
+/**
+ * Reproduit exactement les formules du fichier Excel source
+ * (feuille "Jours de congés") :
+ *   Travaillé = COUNTIF(plage,"=1") + SUMIF(plage,"=0,5")
+ *   Congés    = COUNTIF(plage,"=0") + SUMIF(plage,"=0,5")
+ * Une cellule vide (jour non saisi, y compris les week-ends) ne compte
+ * ni dans l'un ni dans l'autre — seules les valeurs explicitement
+ * saisies dans le Planning sont comptabilisées, fériés/fermetures
+ * compris (comme dans le fichier).
+ */
+function computeMonthStats(employeeId: string, year: number, month: number, dayIndex: Map<string, DayEntry>): MonthStats {
   const n = daysInMonth(year, month);
-  let joursOuvres = 0;
   let travaille = 0;
   let conges = 0;
 
   for (let day = 1; day <= n; day++) {
     const date = isoDate(year, month, day);
-    if (isWeekend(date)) continue;
     const entry = dayIndex.get(`${employeeId}|${date}`);
-    const category = entry?.category ?? (holidaySet.has(date) ? "ferie" : "normal");
-    if (category === "ferie" || category === "fermeture") continue;
-    joursOuvres += 1;
-    const value = entry?.value ?? 1;
-    travaille += value;
-    conges += 1 - value;
+    if (!entry) continue;
+    if (entry.value === 1) travaille += 1;
+    else if (entry.value === 0.5) {
+      travaille += 0.5;
+      conges += 0.5;
+    } else if (entry.value === 0) conges += 1;
   }
 
-  return { joursOuvres, travaille, conges };
+  return { travaille, conges };
 }
 
 function fmt(n: number): string {
@@ -59,32 +60,22 @@ export default function CongesPage({ state, setState }: CongesPageProps) {
     return m;
   }, [state.days]);
 
-  const holidaySet = useMemo(() => frenchPublicHolidays(state.year), [state.year]);
-
   const table = useMemo(() => {
     return employees.map((emp) => {
-      const months = MONTH_LABELS.map((_, i) => computeMonthStats(emp.id, state.year, i + 1, dayIndex, holidaySet));
+      const months = MONTH_LABELS.map((_, i) => computeMonthStats(emp.id, state.year, i + 1, dayIndex));
       const total = months.reduce(
-        (acc, m) => ({
-          joursOuvres: acc.joursOuvres + m.joursOuvres,
-          travaille: acc.travaille + m.travaille,
-          conges: acc.conges + m.conges,
-        }),
-        { joursOuvres: 0, travaille: 0, conges: 0 }
+        (acc, m) => ({ travaille: acc.travaille + m.travaille, conges: acc.conges + m.conges }),
+        { travaille: 0, conges: 0 }
       );
       return { emp, months, total };
     });
-  }, [employees, state.year, dayIndex, holidaySet]);
+  }, [employees, state.year, dayIndex]);
 
   const teamTotal = useMemo(() => {
     return MONTH_LABELS.map((_, i) =>
       table.reduce(
-        (acc, row) => ({
-          joursOuvres: acc.joursOuvres + row.months[i].joursOuvres,
-          travaille: acc.travaille + row.months[i].travaille,
-          conges: acc.conges + row.months[i].conges,
-        }),
-        { joursOuvres: 0, travaille: 0, conges: 0 }
+        (acc, row) => ({ travaille: acc.travaille + row.months[i].travaille, conges: acc.conges + row.months[i].conges }),
+        { travaille: 0, conges: 0 }
       )
     );
   }, [table]);
@@ -96,9 +87,11 @@ export default function CongesPage({ state, setState }: CongesPageProps) {
       <header style={{ marginBottom: 16 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Jours de congés {state.year}</h1>
         <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
-          Calculé automatiquement à partir du Planning : pour chaque mois, "Trav." = somme des valeurs saisies, "Cong." =
-          jours ouvrés (hors fériés/fermetures) non travaillés. "Reste" = jours travaillés dans l'année moins l'objectif
-          imposé par le client (par défaut 218, modifiable ci-dessous). Modifiez le Planning pour changer ces chiffres.
+          Calculé automatiquement à partir du Planning, avec les mêmes formules que le fichier Excel d'origine : "Trav."
+          compte les cellules à 1 (+ 0,5 pour les demi-journées) et "Cong." compte les cellules à 0 (+ 0,5 pour les
+          demi-journées) — jours fériés et fermetures inclus, comme dans le fichier. Les jours non saisis ne comptent nulle
+          part. "Reste" = jours travaillés dans l'année moins l'objectif imposé par le client (par défaut 218, modifiable
+          ci-dessous). Modifiez le Planning pour changer ces chiffres.
         </p>
       </header>
 
