@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { DayEntry, Employee } from "./types";
-import { MONTH_LABELS, daysInMonth, fullName, isWeekend, isoDate, weekdayLetter } from "./lib";
+import { MONTH_LABELS, daysInMonth, frenchPublicHolidays, fullName, isWeekend, isoDate, weekdayLetter } from "./lib";
 
 const CATEGORY_COLORS: Record<string, string> = {
   ferie: "FFC65911",
@@ -24,6 +24,7 @@ export async function exportMonthToExcel(
   const ws = wb.addWorksheet(`${MONTH_LABELS[month - 1]} ${year}`);
 
   const n = daysInMonth(year, month);
+  const holidays = frenchPublicHolidays(year);
 
   ws.getCell(1, 1).value = "Employé";
   ws.getCell(1, 1).font = { bold: true };
@@ -63,7 +64,7 @@ export async function exportMonthToExcel(
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: WEEKEND_FILL } };
         continue;
       }
-      const entry = dayIndex.get(`${emp.id}|${d}`);
+      const entry = dayIndex.get(`${emp.id}|${d}`) ?? (holidays.has(d) ? { employeeId: emp.id, date: d, value: 0, category: "ferie" as const } : undefined);
       if (entry) {
         cell.value = entry.value;
         const fill = CATEGORY_COLORS[entry.category];

@@ -122,7 +122,7 @@ export default function App() {
     for (const emp of employees) {
       for (const day of days) {
         const date = isoDate(state.year, month, day);
-        if (isWeekend(date)) continue;
+        if (isWeekend(date) || holidaySet.has(date)) continue;
         const key = cellKey(emp.id, date);
         const i = idx.get(key);
         const existing = i !== undefined ? newDays[i] : undefined;
@@ -335,8 +335,12 @@ export default function App() {
                     {days.map((day, col) => {
                       const date = isoDate(state.year, month, day);
                       const key = cellKey(emp.id, date);
-                      const entry = dayIndex.get(key);
                       const weekend = isWeekend(date);
+                      const entry =
+                        dayIndex.get(key) ??
+                        (!weekend && holidaySet.has(date)
+                          ? ({ employeeId: emp.id, date, category: "ferie", value: 0 } as DayEntry)
+                          : undefined);
                       const selected = selection.has(key);
                       const bg = weekend ? "#f1f5f9" : entry ? CATEGORY_COLOR[entry.category] : "#fff";
                       return (
@@ -353,7 +357,7 @@ export default function App() {
                             userSelect: "none",
                           }}
                         >
-                          {entry && entry.value !== 1 ? entry.value : ""}
+                          {entry && (entry.category !== "normal" || entry.value !== 1) ? entry.value : ""}
                         </td>
                       );
                     })}
