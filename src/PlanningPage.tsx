@@ -135,12 +135,6 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
     setDirty(true);
   }
 
-  function selectionCategory(): DayCategory {
-    if (selection.size === 0) return "normal";
-    const firstKey = selection.values().next().value as string;
-    return dayIndex.get(firstKey)?.category ?? "normal";
-  }
-
   function fillMonthPresence() {
     setDraftDays((prevDays) => {
       const newDays = [...prevDays];
@@ -364,7 +358,8 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                   className="btn-ghost"
                   style={{ padding: "2px 8px", fontSize: 12 }}
                   disabled={selectedCount === 0}
-                  onClick={() => applyToSelection(selectionCategory(), v)}
+                  title="Remet en Présence avec cette valeur (efface toute catégorie spéciale)"
+                  onClick={() => applyToSelection("normal", v)}
                 >
                   {v}
                 </button>
