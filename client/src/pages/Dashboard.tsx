@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import { useAppState } from "../AppStateContext";
 import type { DashboardData } from "../types";
-import { employeeColor, formatJH } from "../lib";
+import { employeeColor, formatBirthday, formatJH, fullName, upcomingBirthdays } from "../lib";
 
 function Card({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "ok" | "warn" | "bad" }) {
   const toneClass =
@@ -53,7 +53,7 @@ export default function Dashboard() {
         <Card
           label="Écart forfait le plus critique"
           value={worstBalance ? `${formatJH(worstBalance.ecart)} j` : "—"}
-          sub={worstBalance ? empById[worstBalance.employeeId]?.name : undefined}
+          sub={worstBalance && empById[worstBalance.employeeId] ? fullName(empById[worstBalance.employeeId]) : undefined}
           tone={worstBalance && worstBalance.ecart < -10 ? "bad" : worstBalance && worstBalance.ecart < 0 ? "warn" : "ok"}
         />
         <Card
@@ -102,7 +102,9 @@ export default function Dashboard() {
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ background: employeeColor(i) }}
                   />
-                  <span className="text-sm text-slate-700 flex-1">{empById[b.employeeId]?.name}</span>
+                  <span className="text-sm text-slate-700 flex-1">
+                    {empById[b.employeeId] ? fullName(empById[b.employeeId]) : ""}
+                  </span>
                   <span
                     className={`text-sm font-medium ${
                       b.ecart < -10 ? "text-red-600" : b.ecart < 0 ? "text-amber-600" : "text-emerald-600"
@@ -133,13 +135,30 @@ export default function Dashboard() {
                   })}
                 </span>
                 <span className="text-amber-600">
-                  {w.absentEmployees.map((id) => empById[id]?.name).join(", ")}
+                  {w.absentEmployees.map((id) => (empById[id] ? fullName(empById[id]) : "")).join(", ")}
                 </span>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {upcomingBirthdays(activeEmployees).length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="font-semibold text-slate-900 mb-3">Prochains anniversaires (30 jours)</h2>
+          <ul className="divide-y divide-slate-100">
+            {upcomingBirthdays(activeEmployees).map(({ employee, daysUntil }) => (
+              <li key={employee.id} className="py-2 flex justify-between text-sm">
+                <span className="text-slate-700">{fullName(employee)}</span>
+                <span className="text-slate-500">
+                  {formatBirthday(employee.dateAnniversaire!)}
+                  {daysUntil === 0 ? " — aujourd'hui" : daysUntil === 1 ? " — demain" : ` — dans ${daysUntil} j`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {data.estimationVariances.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

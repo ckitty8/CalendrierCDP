@@ -22,11 +22,20 @@ api.get("/state", async (_req, res) => {
 
 // ---- Employees ----
 api.post("/employees", async (req, res) => {
-  const { name, role, forfaitJours } = req.body ?? {};
-  if (!name) return res.status(400).json({ error: "name requis" });
+  const { nom, prenom, dateAnniversaire, role, forfaitJours } = req.body ?? {};
+  if (!nom || !String(nom).trim()) return res.status(400).json({ error: "nom requis" });
+  if (!prenom || !String(prenom).trim()) return res.status(400).json({ error: "prenom requis" });
   const emp = await mutate((state) => {
     const id = randomUUID();
-    const employee = { id, name, role: role ?? "Développeur", active: true, forfaitJours: forfaitJours ?? 218 };
+    const employee = {
+      id,
+      nom: String(nom).trim(),
+      prenom: String(prenom).trim(),
+      dateAnniversaire: dateAnniversaire || null,
+      role: role ?? "Développeur",
+      active: true,
+      forfaitJours: forfaitJours ?? 218,
+    };
     state.employees.push(employee);
     return employee;
   });

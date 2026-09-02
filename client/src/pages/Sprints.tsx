@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { api } from "../api";
 import { useAppState } from "../AppStateContext";
 import type { AllocationRow, CapacityRow } from "../types";
-import { formatJH } from "../lib";
+import { formatJH, fullName } from "../lib";
 
 export default function Sprints() {
   const { state, refresh } = useAppState();
@@ -81,7 +81,7 @@ export default function Sprints() {
               return (
                 <tr key={emp.id}>
                   <td className="sticky left-0 bg-white p-2 border-b border-slate-100 font-medium text-slate-700">
-                    {emp.name}
+                    {fullName(emp)}
                   </td>
                   {state.sprints.map((s) => {
                     const r = rows.find((x) => x.sprintId === s.id);

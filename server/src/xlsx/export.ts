@@ -3,6 +3,7 @@ import type { AppState } from "../types.js";
 import {
   congesRollup,
   employeeSprintCapacity,
+  fullName,
   leaveBalances,
   sprintAllocation,
 } from "../calc/engine.js";
@@ -75,7 +76,7 @@ function buildPlanningSheet(wb: ExcelJS.Workbook, state: AppState) {
 
   state.employees.forEach((emp, r) => {
     const row = headerRow + 2 + r;
-    ws.getCell(row, 1).value = emp.name;
+    ws.getCell(row, 1).value = fullName(emp);
     days.forEach((iso, i) => {
       const col = 2 + i;
       const entry = dayIndex.get(`${emp.id}|${iso}`);
@@ -104,7 +105,7 @@ function buildCongesSheet(wb: ExcelJS.Workbook, state: AppState) {
   ws.getRow(1).font = { bold: true };
 
   for (const emp of state.employees) {
-    const row: (string | number)[] = [emp.name];
+    const row: (string | number)[] = [fullName(emp)];
     for (let month = 1; month <= 12; month++) {
       const r = rollup.find((x) => x.employeeId === emp.id && x.month === month);
       row.push(r?.travaille ?? 0, r?.conges ?? 0);
@@ -125,7 +126,7 @@ function buildCapaciteSheet(wb: ExcelJS.Workbook, state: AppState, mode: "reel" 
   ws.addRow(["Employé", ...state.sprints.map((s) => s.label), "Total"]);
   ws.getRow(1).font = { bold: true };
   for (const emp of state.employees.filter((e) => e.active)) {
-    const row: (string | number)[] = [emp.name];
+    const row: (string | number)[] = [fullName(emp)];
     let total = 0;
     for (const sprint of state.sprints) {
       const c = capacities.find((x) => x.employeeId === emp.id && x.sprintId === sprint.id);
@@ -185,10 +186,12 @@ function buildDefinitionSheet(wb: ExcelJS.Workbook, state: AppState) {
 
 function buildEquipeSheet(wb: ExcelJS.Workbook, state: AppState) {
   const ws = wb.addWorksheet("Équipe");
-  ws.addRow(["Nom", "Rôle", "Actif", "Forfait annuel (j)"]);
+  ws.addRow(["Nom", "Prénom", "Date d'anniversaire", "Rôle", "Actif", "Forfait annuel (j)"]);
   ws.getRow(1).font = { bold: true };
-  for (const e of state.employees) ws.addRow([e.name, e.role, e.active ? "Oui" : "Non", e.forfaitJours]);
-  ws.getColumn(1).width = 22;
+  for (const e of state.employees)
+    ws.addRow([e.nom, e.prenom, e.dateAnniversaire ?? "", e.role, e.active ? "Oui" : "Non", e.forfaitJours]);
+  ws.getColumn(1).width = 18;
+  ws.getColumn(2).width = 18;
   return ws;
 }
 

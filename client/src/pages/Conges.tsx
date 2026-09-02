@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { api } from "../api";
 import { useAppState } from "../AppStateContext";
 import type { CongesRow, LeaveBalance } from "../types";
-import { MONTH_LABELS, formatJH } from "../lib";
+import { MONTH_LABELS, formatJH, fullName } from "../lib";
 
 export default function Conges() {
   const { state } = useAppState();
@@ -56,7 +56,7 @@ export default function Conges() {
               return (
                 <tr key={emp.id} className={emp.active ? "" : "opacity-50"}>
                   <td className="sticky left-0 bg-white p-2 border-b border-slate-100 font-medium text-slate-700">
-                    {emp.name}
+                    {fullName(emp)}
                   </td>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => {
                     const r = data.rollup.find((x) => x.employeeId === emp.id && x.month === month);

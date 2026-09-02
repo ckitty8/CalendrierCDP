@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useAppState } from "../AppStateContext";
 import { api, CATEGORY_COLORS, CATEGORY_LABELS } from "../api";
 import type { DayCategory, DayValue } from "../types";
-import { MONTH_LABELS, daysInMonth, employeeColor, isWeekend, isoDate, weekdayLetter } from "../lib";
+import { MONTH_LABELS, daysInMonth, employeeColor, fullName, isWeekend, isoDate, weekdayLetter } from "../lib";
 
 const CATEGORY_ORDER: DayCategory[] = [
   "ferie",
@@ -114,7 +114,7 @@ export default function Planning() {
               <tr key={emp.id}>
                 <td className="sticky left-0 bg-white p-2 text-sm border-b border-slate-100 flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: employeeColor(i) }} />
-                  <span className={emp.active ? "text-slate-800" : "text-slate-400"}>{emp.name}</span>
+                  <span className={emp.active ? "text-slate-800" : "text-slate-400"}>{fullName(emp)}</span>
                 </td>
                 {dates.map((d) => {
                   const entry = dayIndex.get(`${emp.id}|${d}`);
@@ -146,7 +146,10 @@ export default function Planning() {
       {selected && (
         <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 space-y-3">
           <div className="text-sm font-medium text-slate-800">
-            {employees.find((e) => e.id === selected.employeeId)?.name} —{" "}
+            {(() => {
+              const emp = employees.find((e) => e.id === selected.employeeId);
+              return emp ? fullName(emp) : "";
+            })()} —{" "}
             {new Date(selected.date + "T00:00:00Z").toLocaleDateString("fr-FR", {
               weekday: "long",
               day: "2-digit",

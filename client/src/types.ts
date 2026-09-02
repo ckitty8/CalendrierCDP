@@ -17,7 +17,9 @@ export interface DayEntry {
 
 export interface Employee {
   id: string;
-  name: string;
+  nom: string;
+  prenom: string;
+  dateAnniversaire: string | null;
   role: string;
   active: boolean;
   forfaitJours: number;

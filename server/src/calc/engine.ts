@@ -9,6 +9,10 @@ import { frenchPublicHolidays } from "./holidays.js";
 
 export type CapacityMode = "reel" | "previsionnel";
 
+export function fullName(emp: Pick<Employee, "nom" | "prenom">): string {
+  return `${emp.nom} ${emp.prenom}`.trim();
+}
+
 export function isWeekend(dateISO: string): boolean {
   const d = new Date(dateISO + "T00:00:00Z");
   const day = d.getUTCDay();

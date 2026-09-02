@@ -18,8 +18,9 @@ export async function saveState(state: AppState): Promise<void> {
   meta.addRow(["sourceFile", state.meta.sourceFile ?? ""]);
 
   const emp = wb.addWorksheet("Employees");
-  headerRow(emp, ["id", "name", "role", "active", "forfaitJours"]);
-  for (const e of state.employees) emp.addRow([e.id, e.name, e.role, e.active, e.forfaitJours]);
+  headerRow(emp, ["id", "nom", "prenom", "dateAnniversaire", "role", "active", "forfaitJours"]);
+  for (const e of state.employees)
+    emp.addRow([e.id, e.nom, e.prenom, e.dateAnniversaire ?? "", e.role, e.active, e.forfaitJours]);
 
   const days = wb.addWorksheet("Days");
   headerRow(days, ["employeeId", "date", "value", "category"]);
@@ -93,7 +94,9 @@ export async function loadState(): Promise<AppState> {
 
   const employees = readRows("Employees").map((r) => ({
     id: String(r.id),
-    name: String(r.name),
+    nom: String(r.nom ?? ""),
+    prenom: String(r.prenom ?? ""),
+    dateAnniversaire: r.dateAnniversaire ? String(r.dateAnniversaire) : null,
     role: String(r.role ?? ""),
     active: Boolean(r.active),
     forfaitJours: Number(r.forfaitJours ?? 218),
