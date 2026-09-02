@@ -11,6 +11,33 @@ body {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
   background: #f6f7fb;
   color: #1a1d29;
+  overflow-x: hidden;
+}
+
+.page {
+  padding: 20px 24px 60px;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .page {
+    padding: 12px 12px 40px;
+  }
+  .layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .page {
+    padding: 10px 8px 32px;
+  }
 }
 
 .btn-primary {
@@ -110,4 +137,14 @@ td {
 }
 thead th.sticky-col.sticky-row {
   z-index: 3;
+}
+
+.col-name {
+  min-width: 170px;
+}
+
+@media (max-width: 420px) {
+  .col-name {
+    min-width: 118px;
+  }
 }

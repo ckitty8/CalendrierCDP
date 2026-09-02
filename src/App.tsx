@@ -170,7 +170,7 @@ export default function App() {
   const selectedCount = selection.size;
 
   return (
-    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px 60px" }}>
+    <div className="page" style={{ maxWidth: 1400, margin: "0 auto" }}>
       <header
         style={{
           display: "flex",
@@ -192,7 +192,7 @@ export default function App() {
         </button>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 20, alignItems: "start" }}>
+      <div className="layout-grid">
         <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="panel">
             <h2 className="panel-title">Export</h2>
@@ -256,8 +256,12 @@ export default function App() {
                 {holidays.map((h) => (
                   <li key={h.date} style={{ fontSize: 12.5, color: "#475569", display: "flex", justifyContent: "space-between" }}>
                     <span>{h.label}</span>
-                    <span>
-                      {new Date(h.date + "T00:00:00Z").toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
+                    <span style={{ textTransform: "capitalize" }}>
+                      {new Date(h.date + "T00:00:00Z").toLocaleDateString("fr-FR", {
+                        weekday: "short",
+                        day: "2-digit",
+                        month: "2-digit",
+                      })}
                     </span>
                   </li>
                 ))}
@@ -266,7 +270,7 @@ export default function App() {
           </div>
         </aside>
 
-        <main>
+        <main style={{ minWidth: 0 }}>
           <div
             style={{
               display: "flex",
@@ -293,8 +297,8 @@ export default function App() {
               </button>
             </div>
 
-            <div className="panel" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px" }}>
-              <span style={{ fontSize: 13, color: "#475569", minWidth: 150 }}>
+            <div className="panel" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, padding: "8px 12px" }}>
+              <span style={{ fontSize: 13, color: "#475569" }}>
                 {selectedCount === 0
                   ? "Aucune cellule sélectionnée"
                   : `${selectedCount} cellule${selectedCount > 1 ? "s" : ""} sélectionnée${selectedCount > 1 ? "s" : ""}`}
@@ -344,8 +348,8 @@ export default function App() {
                 <tr>
                   <th
                     rowSpan={2}
-                    className="sticky-col sticky-row"
-                    style={{ minWidth: 170, textAlign: "left", padding: "6px 10px", top: 0 }}
+                    className="sticky-col sticky-row col-name"
+                    style={{ textAlign: "left", padding: "6px 10px", top: 0 }}
                   >
                     Collaborateur
                   </th>
@@ -381,7 +385,7 @@ export default function App() {
               <tbody>
                 {employees.map((emp, row) => (
                   <tr key={emp.id}>
-                    <td className="sticky-col" style={{ padding: "6px 10px", fontWeight: 600, whiteSpace: "nowrap", opacity: emp.active ? 1 : 0.5 }}>
+                    <td className="sticky-col col-name" style={{ padding: "6px 10px", fontWeight: 600, whiteSpace: "nowrap", opacity: emp.active ? 1 : 0.5 }}>
                       {fullName(emp)}
                     </td>
                     {days.map((day, col) => {
