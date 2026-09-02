@@ -96,17 +96,19 @@ export default function App() {
 
   function applyToSelection(category: DayCategory, value: DayValue) {
     if (selection.size === 0) return;
-    const newDays = [...state.days];
-    const idx = new Map<string, number>();
-    newDays.forEach((d, i) => idx.set(cellKey(d.employeeId, d.date), i));
-    for (const key of selection) {
-      const [employeeId, date] = key.split("|");
-      const entry: DayEntry = { employeeId, date, category, value };
-      const i = idx.get(key);
-      if (i !== undefined) newDays[i] = entry;
-      else newDays.push(entry);
-    }
-    setState((prev) => ({ ...prev, days: newDays }));
+    setState((prev) => {
+      const newDays = [...prev.days];
+      const idx = new Map<string, number>();
+      newDays.forEach((d, i) => idx.set(cellKey(d.employeeId, d.date), i));
+      for (const key of selection) {
+        const [employeeId, date] = key.split("|");
+        const entry: DayEntry = { employeeId, date, category, value };
+        const i = idx.get(key);
+        if (i !== undefined) newDays[i] = entry;
+        else newDays.push(entry);
+      }
+      return { ...prev, days: newDays };
+    });
   }
 
   function selectionCategory(): DayCategory {
@@ -116,24 +118,26 @@ export default function App() {
   }
 
   function fillMonthPresence() {
-    const newDays = [...state.days];
-    const idx = new Map<string, number>();
-    newDays.forEach((d, i) => idx.set(cellKey(d.employeeId, d.date), i));
-    for (const emp of employees) {
-      for (const day of days) {
-        const date = isoDate(state.year, month, day);
-        if (isWeekend(date) || holidaySet.has(date)) continue;
-        const key = cellKey(emp.id, date);
-        const i = idx.get(key);
-        const existing = i !== undefined ? newDays[i] : undefined;
-        if (!existing || existing.category === "normal") {
-          const entry: DayEntry = { employeeId: emp.id, date, category: "normal", value: 1 };
-          if (i !== undefined) newDays[i] = entry;
-          else newDays.push(entry);
+    setState((prev) => {
+      const newDays = [...prev.days];
+      const idx = new Map<string, number>();
+      newDays.forEach((d, i) => idx.set(cellKey(d.employeeId, d.date), i));
+      for (const emp of employees) {
+        for (const day of days) {
+          const date = isoDate(prev.year, month, day);
+          if (isWeekend(date) || holidaySet.has(date)) continue;
+          const key = cellKey(emp.id, date);
+          const i = idx.get(key);
+          const existing = i !== undefined ? newDays[i] : undefined;
+          if (!existing || existing.category === "normal") {
+            const entry: DayEntry = { employeeId: emp.id, date, category: "normal", value: 1 };
+            if (i !== undefined) newDays[i] = entry;
+            else newDays.push(entry);
+          }
         }
       }
-    }
-    setState((prev) => ({ ...prev, days: newDays }));
+      return { ...prev, days: newDays };
+    });
   }
 
   async function handleExport() {
@@ -277,29 +281,49 @@ export default function App() {
               </button>
             </div>
 
-            {selectedCount > 0 && (
-              <div className="panel" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px" }}>
-                <span style={{ fontSize: 13, color: "#475569" }}>
-                  {selectedCount} cellule{selectedCount > 1 ? "s" : ""} sélectionnée{selectedCount > 1 ? "s" : ""}
-                </span>
-                {CATEGORY_META.map((c) => (
-                  <button
-                    key={c.key}
-                    title={c.label}
-                    onClick={() => applyToSelection(c.key, c.key === "normal" ? 1 : 0)}
-                    style={{ width: 22, height: 22, borderRadius: 4, background: c.color, border: "1px solid #94a3b8", cursor: "pointer" }}
-                  />
-                ))}
-                {([0, 0.5, 1] as DayValue[]).map((v) => (
-                  <button key={v} className="btn-ghost" style={{ padding: "2px 8px", fontSize: 12 }} onClick={() => applyToSelection(selectionCategory(), v)}>
-                    {v}
-                  </button>
-                ))}
-                <button className="btn-ghost" style={{ padding: "2px 8px", fontSize: 12 }} onClick={() => setSelection(new Set())}>
-                  Fermer
+            <div className="panel" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px" }}>
+              <span style={{ fontSize: 13, color: "#475569", minWidth: 150 }}>
+                {selectedCount === 0
+                  ? "Aucune cellule sélectionnée"
+                  : `${selectedCount} cellule${selectedCount > 1 ? "s" : ""} sélectionnée${selectedCount > 1 ? "s" : ""}`}
+              </span>
+              {CATEGORY_META.map((c) => (
+                <button
+                  key={c.key}
+                  title={c.label}
+                  disabled={selectedCount === 0}
+                  onClick={() => applyToSelection(c.key, c.key === "normal" ? 1 : 0)}
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 4,
+                    background: c.color,
+                    border: "1px solid #94a3b8",
+                    cursor: selectedCount === 0 ? "default" : "pointer",
+                    opacity: selectedCount === 0 ? 0.4 : 1,
+                  }}
+                />
+              ))}
+              {([0, 0.5, 1] as DayValue[]).map((v) => (
+                <button
+                  key={v}
+                  className="btn-ghost"
+                  style={{ padding: "2px 8px", fontSize: 12 }}
+                  disabled={selectedCount === 0}
+                  onClick={() => applyToSelection(selectionCategory(), v)}
+                >
+                  {v}
                 </button>
-              </div>
-            )}
+              ))}
+              <button
+                className="btn-ghost"
+                style={{ padding: "2px 8px", fontSize: 12 }}
+                disabled={selectedCount === 0}
+                onClick={() => setSelection(new Set())}
+              >
+                Fermer
+              </button>
+            </div>
           </div>
 
           <div style={{ overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", maxHeight: "70vh" }}>
@@ -338,8 +362,10 @@ export default function App() {
                       const weekend = isWeekend(date);
                       const entry =
                         dayIndex.get(key) ??
-                        (!weekend && holidaySet.has(date)
-                          ? ({ employeeId: emp.id, date, category: "ferie", value: 0 } as DayEntry)
+                        (!weekend
+                          ? holidaySet.has(date)
+                            ? ({ employeeId: emp.id, date, category: "ferie", value: 0 } as DayEntry)
+                            : ({ employeeId: emp.id, date, category: "normal", value: 1 } as DayEntry)
                           : undefined);
                       const selected = selection.has(key);
                       const bg = weekend ? "#f1f5f9" : entry ? CATEGORY_COLOR[entry.category] : "#fff";
@@ -357,7 +383,7 @@ export default function App() {
                             userSelect: "none",
                           }}
                         >
-                          {entry && (entry.category !== "normal" || entry.value !== 1) ? entry.value : ""}
+                          {entry ? entry.value : ""}
                         </td>
                       );
                     })}
