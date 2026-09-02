@@ -90,8 +90,10 @@ export default function CongesPage({ state, setState }: CongesPageProps) {
           Calculé automatiquement à partir du Planning, avec les mêmes formules que le fichier Excel d'origine : "Trav."
           compte les cellules à 1 (+ 0,5 pour les demi-journées) et "Cong." compte les cellules à 0 (+ 0,5 pour les
           demi-journées) — jours fériés et fermetures inclus, comme dans le fichier. Les jours non saisis ne comptent nulle
-          part. "Reste" = jours travaillés dans l'année moins l'objectif imposé par le client (par défaut 218, modifiable
-          ci-dessous). Modifiez le Planning pour changer ces chiffres.
+          part. "Total jour travaillé client" = jours travaillés dans l'année moins l'objectif imposé par le client (par
+          défaut 218, modifiable ci-dessous) — c'est le nombre de jours de congés qu'il reste à prendre pour que les jours
+          travaillés tombent pile sur cet objectif (en rouge si positif : il reste des congés à prendre ; en vert si 0 ou
+          négatif). Modifiez le Planning pour changer ces chiffres.
         </p>
       </header>
 
@@ -165,9 +167,9 @@ export default function CongesPage({ state, setState }: CongesPageProps) {
               <th
                 className="sticky-row"
                 style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "#1e3a8a", background: "#eff6ff" }}
-                title="Jours travaillés - objectif imposé par le client"
+                title="Jours de congés qu'il reste à prendre pour que les jours travaillés égalent l'objectif imposé par le client"
               >
-                Reste
+                Total jour travaillé client
               </th>
             </tr>
           </thead>
@@ -190,7 +192,7 @@ export default function CongesPage({ state, setState }: CongesPageProps) {
                     ...cellStyle,
                     fontWeight: 700,
                     background: "#f8fafc",
-                    color: total.travaille - state.objectifJoursTravailles < 0 ? "#dc2626" : "#047857",
+                    color: total.travaille - state.objectifJoursTravailles > 0 ? "#dc2626" : "#047857",
                   }}
                 >
                   {fmt(total.travaille - state.objectifJoursTravailles)}
