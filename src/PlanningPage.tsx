@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DayCategory, DayEntry, DayValue } from "./types";
 import {
   MONTH_LABELS,
@@ -46,6 +46,13 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [anchor, setAnchor] = useState<{ row: number; col: number } | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [draftDays, setDraftDays] = useState<DayEntry[]>(state.days);
+  const [dirty, setDirty] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  useEffect(() => {
+    if (!dirty) setDraftDays(state.days);
+  }, [state.days, dirty]);
 
   const employees = useMemo(
     () => state.employees.filter((e) => e.active || showInactive),
@@ -68,9 +75,9 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
 
   const dayIndex = useMemo(() => {
     const m = new Map<string, DayEntry>();
-    for (const d of state.days) m.set(cellKey(d.employeeId, d.date), d);
+    for (const d of draftDays) m.set(cellKey(d.employeeId, d.date), d);
     return m;
-  }, [state.days]);
+  }, [draftDays]);
 
   const holidays = useMemo(() => frenchPublicHolidaysList(state.year), [state.year]);
   const holidaySet = useMemo(() => new Set(holidays.map((h) => h.date)), [holidays]);
@@ -112,8 +119,8 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
 
   function applyToSelection(category: DayCategory, value: DayValue) {
     if (selection.size === 0) return;
-    setState((prev) => {
-      const newDays = [...prev.days];
+    setDraftDays((prevDays) => {
+      const newDays = [...prevDays];
       const idx = new Map<string, number>();
       newDays.forEach((d, i) => idx.set(cellKey(d.employeeId, d.date), i));
       for (const key of selection) {
@@ -123,8 +130,9 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
         if (i !== undefined) newDays[i] = entry;
         else newDays.push(entry);
       }
-      return { ...prev, days: newDays };
+      return newDays;
     });
+    setDirty(true);
   }
 
   function selectionCategory(): DayCategory {
@@ -134,13 +142,13 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
   }
 
   function fillMonthPresence() {
-    setState((prev) => {
-      const newDays = [...prev.days];
+    setDraftDays((prevDays) => {
+      const newDays = [...prevDays];
       const idx = new Map<string, number>();
       newDays.forEach((d, i) => idx.set(cellKey(d.employeeId, d.date), i));
       for (const emp of employees) {
         for (const day of days) {
-          const date = isoDate(prev.year, month, day);
+          const date = isoDate(state.year, month, day);
           if (isWeekend(date) || holidaySet.has(date)) continue;
           const key = cellKey(emp.id, date);
           const i = idx.get(key);
@@ -152,17 +160,25 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
           }
         }
       }
-      return { ...prev, days: newDays };
+      return newDays;
     });
+    setDirty(true);
   }
 
   async function handleExport() {
     setExporting(true);
     try {
-      await exportMonthToExcel(state.year, month, employees, state.days);
+      await exportMonthToExcel(state.year, month, employees, draftDays);
     } finally {
       setExporting(false);
     }
+  }
+
+  function saveDays() {
+    setState((prev) => ({ ...prev, days: draftDays }));
+    setDirty(false);
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 2000);
   }
 
   function resetData() {
@@ -191,9 +207,18 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             Clic : sélection simple · Ctrl/Cmd+clic : ajouter/retirer · Maj+clic : sélection rectangulaire
           </p>
         </div>
-        <button className="btn-ghost" onClick={resetData}>
-          Réinitialiser les données
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            className={dirty ? "btn-primary" : "btn-ghost"}
+            onClick={saveDays}
+            disabled={!dirty}
+          >
+            {savedFlash ? "Enregistré ✓" : "Enregistrer"}
+          </button>
+          <button className="btn-ghost" onClick={resetData}>
+            Réinitialiser les données
+          </button>
+        </div>
       </header>
 
       <div className="layout-grid">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Employee } from "./types";
 import { fullName, slugify } from "./lib";
 import type { PlanningState } from "./usePlanningState";
@@ -40,21 +40,39 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
   const [role, setRole] = useState("Développeur");
+  const [draftEmployees, setDraftEmployees] = useState<Employee[]>(state.employees);
+  const [dirty, setDirty] = useState(false);
+  const [savedFlash, setSavedFlash] = useState(false);
 
-  function updateEmployee(id: string, patch: Partial<Employee>) {
-    setState((prev) => ({
-      ...prev,
-      employees: prev.employees.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-    }));
+  useEffect(() => {
+    if (!dirty) setDraftEmployees(state.employees);
+  }, [state.employees, dirty]);
+
+  function editEmployee(id: string, patch: Partial<Employee>) {
+    setDraftEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    setDirty(true);
+  }
+
+  function toggleActive(emp: Employee) {
+    const next = draftEmployees.map((e) => (e.id === emp.id ? { ...e, active: !e.active } : e));
+    setDraftEmployees(next);
+    setState((prev) => ({ ...prev, employees: next }));
+  }
+
+  function saveEmployees() {
+    setState((prev) => ({ ...prev, employees: draftEmployees }));
+    setDirty(false);
+    setSavedFlash(true);
+    setTimeout(() => setSavedFlash(false), 2000);
   }
 
   function addEmployee() {
     if (!nom.trim() || !prenom.trim()) return;
-    setState((prev) => {
-      const id = uniqueId(nom, prenom, prev.employees);
-      const employee: Employee = { id, nom: nom.trim(), prenom: prenom.trim(), role: role.trim() || "Développeur", active: true };
-      return { ...prev, employees: [...prev.employees, employee] };
-    });
+    const id = uniqueId(nom, prenom, draftEmployees);
+    const employee: Employee = { id, nom: nom.trim(), prenom: prenom.trim(), role: role.trim() || "Développeur", active: true };
+    const next = [...draftEmployees, employee];
+    setDraftEmployees(next);
+    setState((prev) => ({ ...prev, employees: next }));
     setNom("");
     setPrenom("");
     setRole("Développeur");
@@ -62,25 +80,32 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
 
   function removeEmployee(emp: Employee) {
     if (!confirm(`Supprimer ${fullName(emp)} et toutes ses données de planning ?`)) return;
+    const next = draftEmployees.filter((e) => e.id !== emp.id);
+    setDraftEmployees(next);
     setState((prev) => ({
       ...prev,
-      employees: prev.employees.filter((e) => e.id !== emp.id),
+      employees: next,
       days: prev.days.filter((d) => d.employeeId !== emp.id),
     }));
   }
 
-  const upcomingBirthdays = state.employees
+  const upcomingBirthdays = draftEmployees
     .filter((e) => e.birthday)
     .map((e) => ({ emp: e, days: daysUntilNextBirthday(e.birthday!) }))
     .sort((a, b) => a.days - b.days);
 
   return (
     <div>
-      <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Équipe</h1>
-        <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
-          Ajoutez, modifiez ou retirez des membres de l'équipe et renseignez leur date d'anniversaire.
-        </p>
+      <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Équipe</h1>
+          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
+            Ajoutez, modifiez ou retirez des membres de l'équipe et renseignez leur date d'anniversaire.
+          </p>
+        </div>
+        <button className={dirty ? "btn-primary" : "btn-ghost"} onClick={saveEmployees} disabled={!dirty}>
+          {savedFlash ? "Enregistré ✓" : "Enregistrer"}
+        </button>
       </header>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1100 }}>
@@ -122,7 +147,9 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
         )}
 
         <div className="panel" style={{ overflowX: "auto" }}>
-          <h2 className="panel-title">Membres ({state.employees.length})</h2>
+          <h2 className="panel-title">
+            Membres ({draftEmployees.length}){dirty && <span style={{ color: "#b45309", fontWeight: 600, marginLeft: 8 }}>· modifications non enregistrées</span>}
+          </h2>
           <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
             <thead>
               <tr>
@@ -134,28 +161,28 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
               </tr>
             </thead>
             <tbody>
-              {state.employees.map((emp) => (
+              {draftEmployees.map((emp) => (
                 <tr key={emp.id}>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
-                    <input className="input" value={emp.nom} onChange={(e) => updateEmployee(emp.id, { nom: e.target.value })} />
+                    <input className="input" value={emp.nom} onChange={(e) => editEmployee(emp.id, { nom: e.target.value })} />
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
-                    <input className="input" value={emp.prenom} onChange={(e) => updateEmployee(emp.id, { prenom: e.target.value })} />
+                    <input className="input" value={emp.prenom} onChange={(e) => editEmployee(emp.id, { prenom: e.target.value })} />
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
-                    <input className="input" value={emp.role} onChange={(e) => updateEmployee(emp.id, { role: e.target.value })} />
+                    <input className="input" value={emp.role} onChange={(e) => editEmployee(emp.id, { role: e.target.value })} />
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
                     <input
                       className="input"
                       type="date"
                       value={emp.birthday ?? ""}
-                      onChange={(e) => updateEmployee(emp.id, { birthday: e.target.value || undefined })}
+                      onChange={(e) => editEmployee(emp.id, { birthday: e.target.value || undefined })}
                     />
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
                     <button
-                      onClick={() => updateEmployee(emp.id, { active: !emp.active })}
+                      onClick={() => toggleActive(emp)}
                       style={{
                         padding: "4px 10px",
                         borderRadius: 999,

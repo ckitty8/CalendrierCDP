@@ -40,7 +40,12 @@ export default function App() {
         })}
       </nav>
 
-      {page === "planning" ? <PlanningPage state={state} setState={setState} /> : <TeamPage state={state} setState={setState} />}
+      <div hidden={page !== "planning"}>
+        <PlanningPage state={state} setState={setState} />
+      </div>
+      <div hidden={page !== "equipe"}>
+        <TeamPage state={state} setState={setState} />
+      </div>
     </div>
   );
 }
