@@ -31,10 +31,19 @@ const STATUS_OPTIONS: StatusOption[] = [
   { key: "0.5|conge_valide", value: 0.5, category: "conge_valide", label: "Congé validé (demi-journée)" },
 ];
 
+const DEFAULT_BULK_KEY = "1|normal"; // par défaut, la sélection multiple applique Présence (1j)
+
+function cellKey(employeeId: string, date: string): string {
+  return `${employeeId}|${date}`;
+}
+
 export default function Planning() {
   const { state, refresh } = useAppState();
   const [month, setMonth] = useState(new Date().getUTCMonth() + 1);
   const [selected, setSelected] = useState<{ employeeId: string; date: string } | null>(null);
+  const [multiMode, setMultiMode] = useState(false);
+  const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [bulkStatusKey, setBulkStatusKey] = useState(DEFAULT_BULK_KEY);
   const [saving, setSaving] = useState(false);
 
   const year = state!.meta.currentYear;
@@ -43,9 +52,35 @@ export default function Planning() {
 
   const dayIndex = useMemo(() => {
     const idx = new Map<string, { value: DayValue; category: DayCategory }>();
-    for (const d of state!.days) idx.set(`${d.employeeId}|${d.date}`, { value: d.value, category: d.category });
+    for (const d of state!.days) idx.set(cellKey(d.employeeId, d.date), { value: d.value, category: d.category });
     return idx;
   }, [state]);
+
+  const employees = state!.employees;
+
+  function resetSelections() {
+    setSelected(null);
+    setSelection(new Set());
+  }
+
+  function toggleMultiMode() {
+    setMultiMode((v) => !v);
+    resetSelections();
+  }
+
+  function toggleCellSelection(employeeId: string, date: string) {
+    if (multiMode) {
+      setSelection((prev) => {
+        const next = new Set(prev);
+        const key = cellKey(employeeId, date);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+      });
+    } else {
+      setSelected({ employeeId, date });
+    }
+  }
 
   async function handleStatusChange(employeeId: string, date: string, optionKey: string) {
     setSaving(true);
@@ -64,11 +99,69 @@ export default function Planning() {
     }
   }
 
-  const employees = state!.employees;
+  async function applyBulk() {
+    if (selection.size === 0) return;
+    const cells = Array.from(selection).map((key) => {
+      const [employeeId, date] = key.split("|");
+      return { employeeId, date };
+    });
+    const option = STATUS_OPTIONS.find((o) => o.key === bulkStatusKey)!;
+    setSaving(true);
+    try {
+      if (option.key === "clear") {
+        await api.setDaysBulk(cells, { clear: true });
+      } else {
+        await api.setDaysBulk(cells, { value: option.value as DayValue, category: option.category as DayCategory });
+      }
+      await refresh();
+      setSelection(new Set());
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** Jours ouvrés (hors week-end) du mois affiché, toutes personnes, qui n'ont encore aucune
+   * valeur saisie — sert au remplissage par défaut en Présence. */
+  function emptyWeekdayCellsForMonth(): { employeeId: string; date: string }[] {
+    const cells: { employeeId: string; date: string }[] = [];
+    for (const emp of employees) {
+      for (const d of dates) {
+        if (isWeekend(d)) continue;
+        if (!dayIndex.has(cellKey(emp.id, d))) cells.push({ employeeId: emp.id, date: d });
+      }
+    }
+    return cells;
+  }
+
+  function emptyWeekdayCellsForYear(): { employeeId: string; date: string }[] {
+    const cells: { employeeId: string; date: string }[] = [];
+    for (let m = 1; m <= 12; m++) {
+      const n = daysInMonth(year, m);
+      for (const emp of employees) {
+        for (let day = 1; day <= n; day++) {
+          const d = isoDate(year, m, day);
+          if (isWeekend(d)) continue;
+          if (!dayIndex.has(cellKey(emp.id, d))) cells.push({ employeeId: emp.id, date: d });
+        }
+      }
+    }
+    return cells;
+  }
+
+  async function fillPresence(cells: { employeeId: string; date: string }[]) {
+    if (cells.length === 0) return;
+    setSaving(true);
+    try {
+      await api.setDaysBulk(cells, { value: 1, category: "normal" });
+      await refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-slate-900">Planning {year}</h1>
         <div className="flex gap-1 flex-wrap">
           {MONTH_LABELS.map((label, i) => (
@@ -76,7 +169,7 @@ export default function Planning() {
               key={label}
               onClick={() => {
                 setMonth(i + 1);
-                setSelected(null);
+                resetSelections();
               }}
               className={`px-2.5 py-1 rounded-md text-xs font-medium ${
                 month === i + 1 ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
@@ -86,6 +179,34 @@ export default function Planning() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={toggleMultiMode}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium border ${
+            multiMode ? "bg-brand-600 text-white border-brand-600" : "bg-white border-slate-300 text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          {multiMode ? "Sélection multiple activée" : "Activer la sélection multiple"}
+        </button>
+        <button
+          disabled={saving}
+          onClick={() => fillPresence(emptyWeekdayCellsForMonth())}
+          className="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+        >
+          Remplir le mois en Présence
+        </button>
+        <button
+          disabled={saving}
+          onClick={() => fillPresence(emptyWeekdayCellsForYear())}
+          className="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+        >
+          Remplir l'année en Présence
+        </button>
+        <span className="text-xs text-slate-400">
+          Les jours ouvrés sans saisie sont mis à Présence (1j) ; les jours déjà renseignés ne sont pas modifiés.
+        </span>
       </div>
 
       <div className="flex gap-3 flex-wrap text-xs">
@@ -128,19 +249,23 @@ export default function Planning() {
                   <span className={emp.active ? "text-slate-800" : "text-slate-400"}>{fullName(emp)}</span>
                 </td>
                 {dates.map((d) => {
-                  const entry = dayIndex.get(`${emp.id}|${d}`);
+                  const entry = dayIndex.get(cellKey(emp.id, d));
                   const weekend = isWeekend(d);
-                  const isSelected = selected?.employeeId === emp.id && selected?.date === d;
+                  const key = cellKey(emp.id, d);
+                  const isSingleSelected = !multiMode && selected?.employeeId === emp.id && selected?.date === d;
+                  const isMultiSelected = multiMode && selection.has(key);
                   return (
                     <td
                       key={d}
                       className={`border-b border-l border-slate-100 text-center align-middle w-8 h-9 text-xs ${
                         weekend ? "bg-slate-50" : "cursor-pointer hover:ring-2 hover:ring-brand-300"
-                      } ${isSelected ? "ring-2 ring-brand-500" : ""}`}
+                      } ${isSingleSelected ? "ring-2 ring-brand-500" : ""} ${
+                        isMultiSelected ? "ring-2 ring-emerald-500" : ""
+                      }`}
                       style={{ background: !weekend && entry ? CATEGORY_COLORS[entry.category] : undefined }}
                       onClick={() => {
                         if (weekend) return;
-                        setSelected({ employeeId: emp.id, date: d });
+                        toggleCellSelection(emp.id, d);
                       }}
                     >
                       {!weekend && entry ? entry.value : ""}
@@ -153,7 +278,39 @@ export default function Planning() {
         </table>
       </div>
 
-      {selected && (
+      {multiMode && selection.size > 0 && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-3 flex-wrap sticky bottom-4 shadow-md">
+          <span className="text-sm font-medium text-slate-800">{selection.size} jour(s) sélectionné(s)</span>
+          <select
+            disabled={saving}
+            value={bulkStatusKey}
+            onChange={(e) => setBulkStatusKey(e.target.value)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm min-w-[260px] disabled:opacity-50"
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.key} value={opt.key}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <button
+            disabled={saving}
+            onClick={applyBulk}
+            className="px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            Appliquer
+          </button>
+          <button
+            disabled={saving}
+            onClick={() => setSelection(new Set())}
+            className="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-slate-300 text-slate-500 hover:bg-slate-100"
+          >
+            Tout désélectionner
+          </button>
+        </div>
+      )}
+
+      {!multiMode && selected && (
         <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 space-y-3">
           <div className="text-sm font-medium text-slate-800">
             {(() => {
@@ -169,7 +326,7 @@ export default function Planning() {
           <select
             disabled={saving}
             value={(() => {
-              const entry = dayIndex.get(`${selected.employeeId}|${selected.date}`);
+              const entry = dayIndex.get(cellKey(selected.employeeId, selected.date));
               return entry ? `${entry.value}|${entry.category}` : "clear";
             })()}
             onChange={(e) => handleStatusChange(selected.employeeId, selected.date, e.target.value)}

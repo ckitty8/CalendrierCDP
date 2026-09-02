@@ -44,6 +44,14 @@ export const api = {
     req(`/days/${employeeId}/${date}`, { method: "PUT", body: JSON.stringify({ value, category }) }),
   clearDay: (employeeId: string, date: string) =>
     req<void>(`/days/${employeeId}/${date}`, { method: "DELETE" }),
+  setDaysBulk: (
+    cells: { employeeId: string; date: string }[],
+    status: { value: DayValue; category: DayCategory } | { clear: true }
+  ) =>
+    req<{ updated: number }>("/days/bulk", {
+      method: "PUT",
+      body: JSON.stringify({ cells, ...("clear" in status ? { clear: true } : status) }),
+    }),
 
   setTicketTypes: (types: TicketType[]) =>
     req<TicketType[]>("/ticket-types", { method: "PUT", body: JSON.stringify(types) }),

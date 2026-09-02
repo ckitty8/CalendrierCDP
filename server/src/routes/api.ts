@@ -89,6 +89,44 @@ api.delete("/days/:employeeId/:date", async (req, res) => {
   res.status(204).end();
 });
 
+// Mise à jour groupée : applique un même statut (ou l'effacement) à une liste de jours en une
+// seule opération, pour éviter des dizaines/centaines d'appels individuels côté client.
+interface BulkCell {
+  employeeId: string;
+  date: string;
+}
+
+api.put("/days/bulk", async (req, res) => {
+  const { cells, value, category, clear } = req.body as {
+    cells: BulkCell[];
+    value?: DayValue;
+    category?: DayCategory;
+    clear?: boolean;
+  };
+  if (!Array.isArray(cells) || cells.length === 0) {
+    return res.status(400).json({ error: "cells requis (tableau non vide)" });
+  }
+  if (!clear && ![0, 0.5, 1].includes(value as number)) {
+    return res.status(400).json({ error: "value invalide" });
+  }
+  await mutate((state) => {
+    for (const { employeeId, date } of cells) {
+      if (clear) {
+        state.days = state.days.filter((d) => !(d.employeeId === employeeId && d.date === date));
+        continue;
+      }
+      const existing = state.days.find((d) => d.employeeId === employeeId && d.date === date);
+      if (existing) {
+        existing.value = value as DayValue;
+        existing.category = category as DayCategory;
+      } else {
+        state.days.push({ employeeId, date, value: value as DayValue, category: category as DayCategory });
+      }
+    }
+  });
+  res.json({ updated: cells.length });
+});
+
 // ---- Ticket types & définitions ----
 api.put("/ticket-types", async (req, res) => {
   const list = req.body;
