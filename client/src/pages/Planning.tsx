@@ -12,11 +12,29 @@ const CATEGORY_ORDER: DayCategory[] = [
   "conge_valide",
 ];
 
+interface StatusOption {
+  key: string;
+  value: DayValue | null;
+  category: DayCategory | null;
+  label: string;
+}
+
+const STATUS_OPTIONS: StatusOption[] = [
+  { key: "clear", value: null, category: null, label: "— Non renseigné —" },
+  { key: "1|normal", value: 1, category: "normal", label: "Présence (1j)" },
+  { key: "0|ferie", value: 0, category: "ferie", label: "Férié" },
+  { key: "0|fermeture", value: 0, category: "fermeture", label: "Fermeture entreprise" },
+  { key: "0|absent_projet", value: 0, category: "absent_projet", label: "Absent du projet" },
+  { key: "0|conge_previsionnel", value: 0, category: "conge_previsionnel", label: "Congé prévisionnel" },
+  { key: "0.5|conge_previsionnel", value: 0.5, category: "conge_previsionnel", label: "Congé prévisionnel (demi-journée)" },
+  { key: "0|conge_valide", value: 0, category: "conge_valide", label: "Congé validé" },
+  { key: "0.5|conge_valide", value: 0.5, category: "conge_valide", label: "Congé validé (demi-journée)" },
+];
+
 export default function Planning() {
   const { state, refresh } = useAppState();
   const [month, setMonth] = useState(new Date().getUTCMonth() + 1);
   const [selected, setSelected] = useState<{ employeeId: string; date: string } | null>(null);
-  const [pendingValue, setPendingValue] = useState<DayValue | null>(null);
   const [saving, setSaving] = useState(false);
 
   const year = state!.meta.currentYear;
@@ -29,27 +47,20 @@ export default function Planning() {
     return idx;
   }, [state]);
 
-  async function save(employeeId: string, date: string, value: DayValue, category: DayCategory) {
+  async function handleStatusChange(employeeId: string, date: string, optionKey: string) {
     setSaving(true);
     try {
-      await api.setDay(employeeId, date, value, category);
+      if (optionKey === "clear") {
+        await api.clearDay(employeeId, date);
+      } else {
+        const option = STATUS_OPTIONS.find((o) => o.key === optionKey);
+        if (option && option.value !== null && option.category !== null) {
+          await api.setDay(employeeId, date, option.value, option.category);
+        }
+      }
       await refresh();
     } finally {
       setSaving(false);
-      setSelected(null);
-      setPendingValue(null);
-    }
-  }
-
-  async function clear(employeeId: string, date: string) {
-    setSaving(true);
-    try {
-      await api.clearDay(employeeId, date);
-      await refresh();
-    } finally {
-      setSaving(false);
-      setSelected(null);
-      setPendingValue(null);
     }
   }
 
@@ -130,7 +141,6 @@ export default function Planning() {
                       onClick={() => {
                         if (weekend) return;
                         setSelected({ employeeId: emp.id, date: d });
-                        setPendingValue(null);
                       }}
                     >
                       {!weekend && entry ? entry.value : ""}
@@ -156,55 +166,21 @@ export default function Planning() {
               month: "long",
             })}
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button
-              disabled={saving}
-              onClick={() => save(selected.employeeId, selected.date, 1, "normal")}
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-slate-300 hover:bg-slate-100"
-            >
-              Présence (1j)
-            </button>
-            <button
-              disabled={saving}
-              onClick={() => setPendingValue(0.5)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium border ${
-                pendingValue === 0.5 ? "bg-brand-600 text-white border-brand-600" : "bg-white border-slate-300 hover:bg-slate-100"
-              }`}
-            >
-              Demi-journée (0.5j)
-            </button>
-            <button
-              disabled={saving}
-              onClick={() => setPendingValue(0)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium border ${
-                pendingValue === 0 ? "bg-brand-600 text-white border-brand-600" : "bg-white border-slate-300 hover:bg-slate-100"
-              }`}
-            >
-              Absence (0j)
-            </button>
-            <button
-              disabled={saving}
-              onClick={() => clear(selected.employeeId, selected.date)}
-              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-slate-300 text-slate-500 hover:bg-slate-100"
-            >
-              Effacer
-            </button>
-          </div>
-          {pendingValue !== null && (
-            <div className="flex gap-2 flex-wrap pt-2 border-t border-brand-100">
-              {CATEGORY_ORDER.map((cat) => (
-                <button
-                  key={cat}
-                  disabled={saving}
-                  onClick={() => save(selected.employeeId, selected.date, pendingValue, cat)}
-                  className="px-3 py-1.5 rounded-md text-xs font-medium text-white"
-                  style={{ background: CATEGORY_COLORS[cat] }}
-                >
-                  {CATEGORY_LABELS[cat]}
-                </button>
-              ))}
-            </div>
-          )}
+          <select
+            disabled={saving}
+            value={(() => {
+              const entry = dayIndex.get(`${selected.employeeId}|${selected.date}`);
+              return entry ? `${entry.value}|${entry.category}` : "clear";
+            })()}
+            onChange={(e) => handleStatusChange(selected.employeeId, selected.date, e.target.value)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm min-w-[260px] disabled:opacity-50"
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.key} value={opt.key}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
         </div>
       )}
     </div>
