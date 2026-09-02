@@ -9,6 +9,7 @@ export interface PlanningState {
   employees: Employee[];
   days: DayEntry[];
   projects: Project[];
+  objectifJoursTravailles: number;
 }
 
 function migrate(raw: Partial<PlanningState>): PlanningState {
@@ -17,6 +18,7 @@ function migrate(raw: Partial<PlanningState>): PlanningState {
     days: raw.days ?? [],
     projects: raw.projects ?? [],
     employees: (raw.employees ?? []).map((e) => ({ ...e, projectIds: e.projectIds ?? [] })),
+    objectifJoursTravailles: raw.objectifJoursTravailles ?? 218,
   };
 }
 

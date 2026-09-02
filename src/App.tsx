@@ -46,7 +46,7 @@ export default function App() {
         <PlanningPage state={state} setState={setState} />
       </div>
       <div hidden={page !== "conges"}>
-        <CongesPage state={state} />
+        <CongesPage state={state} setState={setState} />
       </div>
       <div hidden={page !== "equipe"}>
         <TeamPage state={state} setState={setState} />

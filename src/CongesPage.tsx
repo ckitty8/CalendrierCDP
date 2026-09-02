@@ -5,6 +5,7 @@ import type { PlanningState } from "./usePlanningState";
 
 interface CongesPageProps {
   state: PlanningState;
+  setState: (updater: (prev: PlanningState) => PlanningState) => void;
 }
 
 interface MonthStats {
@@ -44,7 +45,7 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-export default function CongesPage({ state }: CongesPageProps) {
+export default function CongesPage({ state, setState }: CongesPageProps) {
   const [showInactive, setShowInactive] = useState(false);
 
   const employees = useMemo(
@@ -96,14 +97,31 @@ export default function CongesPage({ state }: CongesPageProps) {
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Jours de congés {state.year}</h1>
         <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
           Calculé automatiquement à partir du Planning : pour chaque mois, "Trav." = somme des valeurs saisies, "Cong." =
-          jours ouvrés (hors fériés/fermetures) non travaillés. Modifiez le Planning pour changer ces chiffres.
+          jours ouvrés (hors fériés/fermetures) non travaillés. "Reste" = jours travaillés dans l'année moins l'objectif
+          imposé par le client (par défaut 218, modifiable ci-dessous). Modifiez le Planning pour changer ces chiffres.
         </p>
       </header>
 
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", marginBottom: 12 }}>
-        <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
-        Afficher les collaborateurs inactifs
-      </label>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20, marginBottom: 12 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569" }}>
+          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+          Afficher les collaborateurs inactifs
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569" }}>
+          Objectif de jours travaillés / an (imposé par le client)
+          <input
+            className="input"
+            type="number"
+            min={0}
+            style={{ width: 70 }}
+            value={state.objectifJoursTravailles}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              if (!Number.isNaN(v)) setState((prev) => ({ ...prev, objectifJoursTravailles: v }));
+            }}
+          />
+        </label>
+      </div>
 
       <div style={{ overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", maxHeight: "75vh" }}>
         <table style={{ borderCollapse: "collapse", fontSize: 12 }}>
@@ -127,11 +145,11 @@ export default function CongesPage({ state }: CongesPageProps) {
                 </th>
               ))}
               <th
-                colSpan={2}
+                colSpan={3}
                 className="sticky-row"
                 style={{ top: 0, padding: "4px 6px", fontWeight: 700, color: "#1e3a8a", background: "#dbeafe", borderLeft: "2px solid #fff" }}
               >
-                Total
+                Total annuel
               </th>
             </tr>
             <tr>
@@ -151,6 +169,13 @@ export default function CongesPage({ state }: CongesPageProps) {
               <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "#1e3a8a", background: "#eff6ff" }}>
                 Cong.
               </th>
+              <th
+                className="sticky-row"
+                style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "#1e3a8a", background: "#eff6ff" }}
+                title="Jours travaillés - objectif imposé par le client"
+              >
+                Reste
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -167,6 +192,16 @@ export default function CongesPage({ state }: CongesPageProps) {
                 ))}
                 <td style={{ ...cellStyle, borderLeft: "2px solid #f8fafc", fontWeight: 700, background: "#f8fafc" }}>{fmt(total.travaille)}</td>
                 <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc" }}>{fmt(total.conges)}</td>
+                <td
+                  style={{
+                    ...cellStyle,
+                    fontWeight: 700,
+                    background: "#f8fafc",
+                    color: total.travaille - state.objectifJoursTravailles < 0 ? "#dc2626" : "#047857",
+                  }}
+                >
+                  {fmt(total.travaille - state.objectifJoursTravailles)}
+                </td>
               </tr>
             ))}
             <tr>
@@ -184,6 +219,9 @@ export default function CongesPage({ state }: CongesPageProps) {
               </td>
               <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
                 {fmt(teamTotal.reduce((s, m) => s + m.conges, 0))}
+              </td>
+              <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
+                {fmt(teamTotal.reduce((s, m) => s + m.travaille, 0) - state.objectifJoursTravailles * table.length)}
               </td>
             </tr>
           </tbody>
