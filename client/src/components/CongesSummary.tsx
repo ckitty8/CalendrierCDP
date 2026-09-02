@@ -74,31 +74,37 @@ export default function CongesSummary() {
         <table className="w-full text-xs border-collapse">
           <thead>
             <tr className="text-slate-500">
-              <th className="sticky left-0 bg-white p-2 text-left border-b border-slate-200 min-w-[160px]">Employé</th>
-              <th className="p-2 text-center border-b border-l border-slate-200 min-w-[110px]">Répartition {state.meta.currentYear}</th>
+              <th rowSpan={2} className="sticky left-0 bg-white p-2 text-left align-bottom border-b-2 border-slate-300 min-w-[160px]">
+                Employé
+              </th>
+              <th rowSpan={2} className="p-2 text-center align-bottom border-b-2 border-l-2 border-slate-300 min-w-[120px]">
+                Répartition {state.meta.currentYear}
+              </th>
               {MONTH_LABELS.map((m) => (
-                <th key={m} colSpan={2} className="p-2 text-center border-b border-l border-slate-200">
+                <th key={m} colSpan={2} className="p-2 text-center border-b border-l-2 border-slate-300 bg-slate-50">
                   {m.slice(0, 3)}
                 </th>
               ))}
-              <th className="p-2 text-center border-b border-l border-slate-200">Total trav.</th>
-              <th className="p-2 text-center border-b border-l border-slate-200">Total congés</th>
-              <th className="p-2 text-center border-b border-l border-slate-200">Forfait</th>
-              <th className="p-2 text-center border-b border-l border-slate-200">Écart</th>
+              <th rowSpan={2} className="p-2 text-center align-bottom border-b-2 border-l-2 border-slate-300 min-w-[70px]">
+                Total trav.
+              </th>
+              <th rowSpan={2} className="p-2 text-center align-bottom border-b-2 border-l border-slate-300 min-w-[70px]">
+                Total congés
+              </th>
+              <th rowSpan={2} className="p-2 text-center align-bottom border-b-2 border-l border-slate-300 min-w-[60px]">
+                Forfait
+              </th>
+              <th rowSpan={2} className="p-2 text-center align-bottom border-b-2 border-l-2 border-slate-300 min-w-[90px]">
+                Écart
+              </th>
             </tr>
             <tr className="text-slate-400">
-              <th className="sticky left-0 bg-white border-b border-slate-200"></th>
-              <th className="border-b border-l border-slate-200"></th>
               {MONTH_LABELS.map((m) => (
                 <Fragment key={m}>
-                  <th className="p-1 font-normal border-b border-l border-slate-200">Trav.</th>
-                  <th className="p-1 font-normal border-b border-slate-200">Cong.</th>
+                  <th className="p-1 font-normal border-b-2 border-l-2 border-slate-300 bg-slate-50">Trav.</th>
+                  <th className="p-1 font-normal border-b-2 border-slate-300 bg-slate-50">Cong.</th>
                 </Fragment>
               ))}
-              <th className="border-b border-l border-slate-200"></th>
-              <th className="border-b border-slate-200"></th>
-              <th className="border-b border-slate-200"></th>
-              <th className="border-b border-slate-200"></th>
             </tr>
           </thead>
           <tbody>
@@ -109,7 +115,7 @@ export default function CongesSummary() {
                   <td className="sticky left-0 bg-white p-2 border-b border-slate-100 font-medium text-slate-700">
                     {fullName(emp)}
                   </td>
-                  <td className="p-1 border-b border-l border-slate-100">
+                  <td className="p-1 border-b border-l-2 border-slate-200">
                     <div className="flex justify-center">
                       <RepartitionBar travaille={bal?.totalTravaille ?? 0} conges={bal?.totalConges ?? 0} />
                     </div>
@@ -118,7 +124,7 @@ export default function CongesSummary() {
                     const r = data.rollup.find((x) => x.employeeId === emp.id && x.month === month);
                     return (
                       <Fragment key={month}>
-                        <td className="p-1 text-center border-b border-l border-slate-100 tabular-nums">
+                        <td className="p-1 text-center border-b border-l-2 border-slate-200 tabular-nums">
                           {r?.travaille || ""}
                         </td>
                         <td className="p-1 text-center border-b border-slate-100 text-amber-600 tabular-nums">
@@ -127,16 +133,16 @@ export default function CongesSummary() {
                       </Fragment>
                     );
                   })}
-                  <td className="p-1 text-center border-b border-l border-slate-100 font-medium tabular-nums">
+                  <td className="p-1 text-center border-b border-l-2 border-slate-200 font-medium tabular-nums">
                     {bal ? formatJH(bal.totalTravaille) : ""}
                   </td>
-                  <td className="p-1 text-center border-b border-slate-100 text-amber-600 font-medium tabular-nums">
+                  <td className="p-1 text-center border-b border-l border-slate-100 text-amber-600 font-medium tabular-nums">
                     {bal ? formatJH(bal.totalConges) : ""}
                   </td>
-                  <td className="p-1 text-center border-b border-slate-100 text-slate-500 tabular-nums">
+                  <td className="p-1 text-center border-b border-l border-slate-100 text-slate-500 tabular-nums">
                     {bal?.forfaitJours}
                   </td>
-                  <td className="p-1 border-b border-slate-100">
+                  <td className="p-1 border-b border-l-2 border-slate-200">
                     <div className="flex flex-col items-center gap-1">
                       <span
                         className={`font-semibold tabular-nums ${
