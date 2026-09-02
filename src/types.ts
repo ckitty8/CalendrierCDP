@@ -21,4 +21,5 @@ export interface Employee {
   prenom: string;
   role: string;
   active: boolean;
+  birthday?: string; // ISO yyyy-mm-dd
 }

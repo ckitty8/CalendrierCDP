@@ -105,6 +105,15 @@ body {
   letter-spacing: 0.03em;
 }
 
+.input {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  background: #fff;
+  color: #1a1d29;
+}
+
 table {
   width: 100%;
 }
