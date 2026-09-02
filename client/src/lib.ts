@@ -72,3 +72,58 @@ export function weekdayLetter(dateISO: string): string {
   const d = new Date(dateISO + "T00:00:00Z");
   return letters[d.getUTCDay()];
 }
+
+function computeEasterSunday(year: number): Date {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+/** Jours fériés français (fixes + mobiles), même algorithme que côté serveur. */
+export function frenchPublicHolidays(year: number): Set<string> {
+  const addDays = (date: Date, days: number) => {
+    const d = new Date(date);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+  const fixed = [
+    `${year}-01-01`, `${year}-05-01`, `${year}-05-08`, `${year}-07-14`,
+    `${year}-08-15`, `${year}-11-01`, `${year}-11-11`, `${year}-12-25`,
+  ];
+  const easter = computeEasterSunday(year);
+  const mobile = [addDays(easter, 1), addDays(easter, 39), addDays(easter, 50)];
+  return new Set([...fixed, ...mobile]);
+}
+
+/** Nombre de jours ouvrés (lun-ven) d'un mois. */
+export function joursOuvresDuMois(year: number, month: number): number {
+  const n = daysInMonth(year, month);
+  let count = 0;
+  for (let day = 1; day <= n; day++) {
+    if (!isWeekend(isoDate(year, month, day))) count++;
+  }
+  return count;
+}
+
+/** Nombre de jours ouvrés d'un mois hors jours fériés français. */
+export function joursOuvresHorsFeries(year: number, month: number, holidays: Set<string>): number {
+  const n = daysInMonth(year, month);
+  let count = 0;
+  for (let day = 1; day <= n; day++) {
+    const d = isoDate(year, month, day);
+    if (!isWeekend(d) && !holidays.has(d)) count++;
+  }
+  return count;
+}
