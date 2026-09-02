@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import type { DayEntry, Employee } from "./types";
-import { MONTH_LABELS, daysInMonth, frenchPublicHolidays, fullName, isWeekend, isoDate, weekdayLetter } from "./lib";
+import { MONTH_LABELS, daysInMonth, frenchPublicHolidays, fullName, isWeekend, isoDate, weekOfYear, weekdayLetter } from "./lib";
 
 const CATEGORY_COLORS: Record<string, string> = {
   ferie: "FFC65911",
@@ -29,15 +29,35 @@ export async function exportMonthToExcel(
   ws.getCell(1, 1).value = "Employé";
   ws.getCell(1, 1).font = { bold: true };
   ws.getCell(2, 1).value = "";
+  ws.getCell(3, 1).value = "";
+
+  let weekGroupStart = 1;
+  let weekGroupWeek = weekOfYear(isoDate(year, month, 1));
+  const flushWeekGroup = (endDay: number) => {
+    const startCol = 1 + weekGroupStart;
+    const endCol = 1 + endDay;
+    const cell = ws.getCell(1, startCol);
+    cell.value = `Sem ${weekGroupWeek}`;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: "center" };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEEF2FF" } };
+    if (endCol > startCol) ws.mergeCells(1, startCol, 1, endCol);
+  };
 
   for (let day = 1; day <= n; day++) {
     const d = isoDate(year, month, day);
     const col = 1 + day;
-    const c1 = ws.getCell(1, col);
+    const week = weekOfYear(d);
+    if (week !== weekGroupWeek) {
+      flushWeekGroup(day - 1);
+      weekGroupStart = day;
+      weekGroupWeek = week;
+    }
+    const c1 = ws.getCell(2, col);
     c1.value = day;
     c1.font = { bold: true };
     c1.alignment = { horizontal: "center" };
-    const c2 = ws.getCell(2, col);
+    const c2 = ws.getCell(3, col);
     c2.value = weekdayLetter(d);
     c2.alignment = { horizontal: "center" };
     if (isWeekend(d)) {
@@ -46,12 +66,13 @@ export async function exportMonthToExcel(
       c2.fill = fill;
     }
   }
+  flushWeekGroup(n);
 
   const dayIndex = new Map<string, DayEntry>();
   for (const d of days) dayIndex.set(`${d.employeeId}|${d.date}`, d);
 
   employees.forEach((emp, i) => {
-    const row = 3 + i;
+    const row = 4 + i;
     const nameCell = ws.getCell(row, 1);
     nameCell.value = fullName(emp);
     nameCell.font = { bold: true };
@@ -75,7 +96,7 @@ export async function exportMonthToExcel(
 
   ws.getColumn(1).width = 22;
   for (let day = 1; day <= n; day++) ws.getColumn(1 + day).width = 4;
-  ws.views = [{ state: "frozen", xSplit: 1, ySplit: 2 }];
+  ws.views = [{ state: "frozen", xSplit: 1, ySplit: 3 }];
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], {

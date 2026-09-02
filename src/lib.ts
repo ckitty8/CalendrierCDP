@@ -33,6 +33,15 @@ export function isWeekend(dateISO: string): boolean {
   return day === 0 || day === 6;
 }
 
+/** Numéro de semaine tel qu'utilisé dans le fichier Excel source : blocs
+ * séquentiels de 7 jours depuis le 1er janvier (pas la norme ISO-8601). */
+export function weekOfYear(dateISO: string): number {
+  const d = new Date(dateISO + "T00:00:00Z");
+  const yearStart = Date.UTC(d.getUTCFullYear(), 0, 1);
+  const dayOfYear = Math.floor((d.getTime() - yearStart) / 86400000);
+  return Math.floor(dayOfYear / 7) + 1;
+}
+
 export function weekdayLetter(dateISO: string): string {
   const letters = ["D", "L", "M", "Me", "J", "V", "S"];
   const d = new Date(dateISO + "T00:00:00Z");

@@ -8,6 +8,7 @@ import {
   isWeekend,
   isoDate,
   weekdayLetter,
+  weekOfYear,
 } from "./lib";
 import { usePlanningState } from "./usePlanningState";
 import { exportMonthToExcel } from "./exportExcel";
@@ -49,6 +50,17 @@ export default function App() {
 
   const nDays = daysInMonth(state.year, month);
   const days = useMemo(() => Array.from({ length: nDays }, (_, i) => i + 1), [nDays]);
+
+  const weekGroups = useMemo(() => {
+    const groups: { week: number; span: number }[] = [];
+    for (const day of days) {
+      const week = weekOfYear(isoDate(state.year, month, day));
+      const last = groups[groups.length - 1];
+      if (last && last.week === week) last.span += 1;
+      else groups.push({ week, span: 1 });
+    }
+    return groups;
+  }, [days, state.year, month]);
 
   const dayIndex = useMemo(() => {
     const m = new Map<string, DayEntry>();
@@ -330,9 +342,25 @@ export default function App() {
             <table style={{ borderCollapse: "collapse", fontSize: 12.5 }}>
               <thead>
                 <tr>
-                  <th className="sticky-col sticky-row" style={{ minWidth: 170, textAlign: "left", padding: "6px 10px" }}>
+                  <th
+                    rowSpan={2}
+                    className="sticky-col sticky-row"
+                    style={{ minWidth: 170, textAlign: "left", padding: "6px 10px", top: 0 }}
+                  >
                     Collaborateur
                   </th>
+                  {weekGroups.map((g, i) => (
+                    <th
+                      key={i}
+                      colSpan={g.span}
+                      className="sticky-row"
+                      style={{ top: 0, padding: "3px 2px", fontSize: 11, fontWeight: 700, color: "#475569", background: "#eef2ff" }}
+                    >
+                      Sem {g.week}
+                    </th>
+                  ))}
+                </tr>
+                <tr>
                   {days.map((day) => {
                     const date = isoDate(state.year, month, day);
                     const weekend = isWeekend(date);
@@ -341,7 +369,7 @@ export default function App() {
                       <th
                         key={day}
                         className="sticky-row"
-                        style={{ minWidth: 30, padding: "4px 2px", background: weekend ? "#f1f5f9" : holiday ? "#fdf2e9" : "#fff" }}
+                        style={{ minWidth: 30, padding: "4px 2px", top: 24, background: weekend ? "#f1f5f9" : holiday ? "#fdf2e9" : "#fff" }}
                       >
                         <div style={{ fontWeight: 700 }}>{day}</div>
                         <div style={{ fontWeight: 400, color: "#94a3b8" }}>{weekdayLetter(date)}</div>
