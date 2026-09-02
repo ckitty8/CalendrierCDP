@@ -194,25 +194,7 @@ export default function Planning() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-slate-900">Planning {year}</h1>
-        <div className="flex gap-1 flex-wrap">
-          {MONTH_LABELS.map((label, i) => (
-            <button
-              key={label}
-              onClick={() => {
-                setMonth(i + 1);
-                clearSelection();
-              }}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium ${
-                month === i + 1 ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {label.slice(0, 3)}
-            </button>
-          ))}
-        </div>
-      </div>
+      <h1 className="text-2xl font-bold text-slate-900">Planning {year}</h1>
 
       <div className="flex items-center gap-2 flex-wrap">
         <button
@@ -243,6 +225,23 @@ export default function Planning() {
             />
             <span className="text-slate-600">{CATEGORY_LABELS[c]}</span>
           </div>
+        ))}
+      </div>
+
+      <div className="flex gap-1 flex-wrap">
+        {MONTH_LABELS.map((label, i) => (
+          <button
+            key={label}
+            onClick={() => {
+              setMonth(i + 1);
+              clearSelection();
+            }}
+            className={`px-2.5 py-1 rounded-md text-xs font-medium ${
+              month === i + 1 ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
+            }`}
+          >
+            {label.slice(0, 3)}
+          </button>
         ))}
       </div>
 
