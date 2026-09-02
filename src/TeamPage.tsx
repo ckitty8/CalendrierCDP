@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Employee } from "./types";
-import { fullName, slugify } from "./lib";
+import { ROLES, fullName, slugify } from "./lib";
 import type { PlanningState } from "./usePlanningState";
 
 interface TeamPageProps {
@@ -39,7 +39,7 @@ function daysUntilNextBirthday(iso: string): number {
 export default function TeamPage({ state, setState }: TeamPageProps) {
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
-  const [role, setRole] = useState("Développeur");
+  const [role, setRole] = useState<string>(ROLES[2]);
   const [draftEmployees, setDraftEmployees] = useState<Employee[]>(state.employees);
   const [dirty, setDirty] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -69,13 +69,13 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
   function addEmployee() {
     if (!nom.trim() || !prenom.trim()) return;
     const id = uniqueId(nom, prenom, draftEmployees);
-    const employee: Employee = { id, nom: nom.trim(), prenom: prenom.trim(), role: role.trim() || "Développeur", active: true };
+    const employee: Employee = { id, nom: nom.trim(), prenom: prenom.trim(), role, active: true };
     const next = [...draftEmployees, employee];
     setDraftEmployees(next);
     setState((prev) => ({ ...prev, employees: next }));
     setNom("");
     setPrenom("");
-    setRole("Développeur");
+    setRole(ROLES[2]);
   }
 
   function removeEmployee(emp: Employee) {
@@ -122,7 +122,13 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
             </label>
             <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
               Rôle
-              <input className="input" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Développeur" />
+              <select className="input" value={role} onChange={(e) => setRole(e.target.value)}>
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
             </label>
             <button className="btn-primary" onClick={addEmployee} disabled={!nom.trim() || !prenom.trim()}>
               Ajouter
@@ -170,7 +176,14 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                     <input className="input" value={emp.prenom} onChange={(e) => editEmployee(emp.id, { prenom: e.target.value })} />
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
-                    <input className="input" value={emp.role} onChange={(e) => editEmployee(emp.id, { role: e.target.value })} />
+                    <select className="input" value={emp.role} onChange={(e) => editEmployee(emp.id, { role: e.target.value })}>
+                      {!ROLES.includes(emp.role as (typeof ROLES)[number]) && <option value={emp.role}>{emp.role}</option>}
+                      {ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
                     <input

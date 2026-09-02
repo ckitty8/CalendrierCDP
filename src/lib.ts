@@ -13,6 +13,8 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+export const ROLES = ["Responsable", "Chef de projet", "Développeur", "Développeur stagiaire"] as const;
+
 export const MONTH_LABELS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
