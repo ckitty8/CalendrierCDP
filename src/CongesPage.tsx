@@ -85,7 +85,7 @@ export default function CongesPage({ state, setState }: CongesPageProps) {
   return (
     <div>
       <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Jours de congés {state.year}</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Jours de congés</h1>
         <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
           Calculé automatiquement à partir du Planning, avec les mêmes formules que le fichier Excel d'origine : "Trav."
           compte les cellules à 1 (+ 0,5 pour les demi-journées) et "Cong." compte les cellules à 0 (+ 0,5 pour les
@@ -213,9 +213,7 @@ export default function CongesPage({ state, setState }: CongesPageProps) {
               <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
                 {fmt(teamTotal.reduce((s, m) => s + m.conges, 0))}
               </td>
-              <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
-                {fmt(teamTotal.reduce((s, m) => s + m.travaille, 0) - state.objectifJoursTravailles * table.length)}
-              </td>
+              <td style={{ ...cellStyle, background: "#dbeafe" }} />
             </tr>
           </tbody>
         </table>
