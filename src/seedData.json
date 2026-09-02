@@ -6,35 +6,40 @@
    "nom": "LABBE",
    "prenom": "Christelle",
    "role": "PO / Lead",
-   "active": true
+   "active": true,
+   "projectIds": []
   },
   {
    "id": "boujelben-nouha",
    "nom": "BOUJELBEN",
    "prenom": "Nouha",
    "role": "Développeur",
-   "active": true
+   "active": true,
+   "projectIds": []
   },
   {
    "id": "houssou-lenaic",
    "nom": "HOUSSOU",
    "prenom": "Lenaic",
    "role": "Développeur",
-   "active": true
+   "active": true,
+   "projectIds": []
   },
   {
    "id": "caselli-anne",
    "nom": "CASELLI",
    "prenom": "Anne",
    "role": "Développeur",
-   "active": false
+   "active": false,
+   "projectIds": []
   },
   {
    "id": "kerarma-cerine",
    "nom": "KERARMA",
    "prenom": "Cerine",
    "role": "Développeur",
-   "active": false
+   "active": false,
+   "projectIds": []
   }
  ],
  "days": [
@@ -4742,5 +4747,6 @@
    "value": 1,
    "category": "normal"
   }
- ]
+ ],
+ "projects": []
 }

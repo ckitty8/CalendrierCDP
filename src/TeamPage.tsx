@@ -1,22 +1,11 @@
 import { useEffect, useState } from "react";
-import type { Employee } from "./types";
-import { ROLES, fullName, slugify } from "./lib";
+import type { Employee, Project } from "./types";
+import { METHODES, METHODE_LABELS, ROLES, fullName, uniqueId } from "./lib";
 import type { PlanningState } from "./usePlanningState";
 
 interface TeamPageProps {
   state: PlanningState;
   setState: (updater: (prev: PlanningState) => PlanningState) => void;
-}
-
-function uniqueId(nom: string, prenom: string, existing: Employee[]): string {
-  const base = slugify(`${nom}-${prenom}`) || "membre";
-  let id = base;
-  let i = 2;
-  while (existing.some((e) => e.id === id)) {
-    id = `${base}-${i}`;
-    i += 1;
-  }
-  return id;
 }
 
 function formatBirthday(iso: string): string {
@@ -40,13 +29,20 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
   const [role, setRole] = useState<string>(ROLES[2]);
+  const [projectNom, setProjectNom] = useState("");
+  const [projectMethode, setProjectMethode] = useState(METHODES[1]);
   const [draftEmployees, setDraftEmployees] = useState<Employee[]>(state.employees);
+  const [draftProjects, setDraftProjects] = useState<Project[]>(state.projects);
   const [dirty, setDirty] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
 
   useEffect(() => {
     if (!dirty) setDraftEmployees(state.employees);
   }, [state.employees, dirty]);
+
+  useEffect(() => {
+    if (!dirty) setDraftProjects(state.projects);
+  }, [state.projects, dirty]);
 
   function editEmployee(id: string, patch: Partial<Employee>) {
     setDraftEmployees((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
@@ -59,8 +55,14 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
     setState((prev) => ({ ...prev, employees: next }));
   }
 
-  function saveEmployees() {
-    setState((prev) => ({ ...prev, employees: draftEmployees }));
+  function toggleEmployeeProject(emp: Employee, projectId: string) {
+    const has = emp.projectIds.includes(projectId);
+    const projectIds = has ? emp.projectIds.filter((id) => id !== projectId) : [...emp.projectIds, projectId];
+    editEmployee(emp.id, { projectIds });
+  }
+
+  function saveAll() {
+    setState((prev) => ({ ...prev, employees: draftEmployees, projects: draftProjects }));
     setDirty(false);
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 2000);
@@ -68,8 +70,8 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
 
   function addEmployee() {
     if (!nom.trim() || !prenom.trim()) return;
-    const id = uniqueId(nom, prenom, draftEmployees);
-    const employee: Employee = { id, nom: nom.trim(), prenom: prenom.trim(), role, active: true };
+    const id = uniqueId(`${nom}-${prenom}`, draftEmployees.map((e) => e.id), "membre");
+    const employee: Employee = { id, nom: nom.trim(), prenom: prenom.trim(), role, active: true, projectIds: [] };
     const next = [...draftEmployees, employee];
     setDraftEmployees(next);
     setState((prev) => ({ ...prev, employees: next }));
@@ -89,6 +91,35 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
     }));
   }
 
+  function editProject(id: string, patch: Partial<Project>) {
+    setDraftProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    setDirty(true);
+  }
+
+  function addProject() {
+    if (!projectNom.trim()) return;
+    const id = uniqueId(projectNom, draftProjects.map((p) => p.id), "projet");
+    const project: Project = { id, nom: projectNom.trim(), methode: projectMethode };
+    const next = [...draftProjects, project];
+    setDraftProjects(next);
+    setState((prev) => ({ ...prev, projects: next }));
+    setProjectNom("");
+    setProjectMethode(METHODES[1]);
+  }
+
+  function removeProject(project: Project) {
+    if (!confirm(`Supprimer le projet "${project.nom}" ? Il sera retiré des collaborateurs assignés.`)) return;
+    const nextProjects = draftProjects.filter((p) => p.id !== project.id);
+    const nextEmployees = draftEmployees.map((e) => ({ ...e, projectIds: e.projectIds.filter((id) => id !== project.id) }));
+    setDraftProjects(nextProjects);
+    setDraftEmployees(nextEmployees);
+    setState((prev) => ({
+      ...prev,
+      projects: nextProjects,
+      employees: prev.employees.map((e) => ({ ...e, projectIds: e.projectIds.filter((id) => id !== project.id) })),
+    }));
+  }
+
   const upcomingBirthdays = draftEmployees
     .filter((e) => e.birthday)
     .map((e) => ({ emp: e, days: daysUntilNextBirthday(e.birthday!) }))
@@ -100,15 +131,67 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Équipe</h1>
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
-            Ajoutez, modifiez ou retirez des membres de l'équipe et renseignez leur date d'anniversaire.
+            Ajoutez, modifiez ou retirez des membres et des projets, et renseignez leurs dates d'anniversaire.
           </p>
         </div>
-        <button className={dirty ? "btn-primary" : "btn-ghost"} onClick={saveEmployees} disabled={!dirty}>
+        <button className={dirty ? "btn-primary" : "btn-ghost"} onClick={saveAll} disabled={!dirty}>
           {savedFlash ? "Enregistré ✓" : "Enregistrer"}
         </button>
       </header>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1100 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1200 }}>
+        <div className="panel">
+          <h2 className="panel-title">Ajouter un projet</h2>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              Nom du projet
+              <input className="input" value={projectNom} onChange={(e) => setProjectNom(e.target.value)} placeholder="Refonte site web" />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              Méthode
+              <select className="input" value={projectMethode} onChange={(e) => setProjectMethode(e.target.value as Project["methode"])}>
+                {METHODES.map((m) => (
+                  <option key={m} value={m}>
+                    {METHODE_LABELS[m]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="btn-primary" onClick={addProject} disabled={!projectNom.trim()}>
+              Ajouter
+            </button>
+          </div>
+
+          {draftProjects.length > 0 && (
+            <ul style={{ listStyle: "none", margin: "14px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+              {draftProjects.map((project) => (
+                <li key={project.id} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <input
+                    className="input"
+                    style={{ flex: "1 1 200px" }}
+                    value={project.nom}
+                    onChange={(e) => editProject(project.id, { nom: e.target.value })}
+                  />
+                  <select
+                    className="input"
+                    value={project.methode}
+                    onChange={(e) => editProject(project.id, { methode: e.target.value as Project["methode"] })}
+                  >
+                    {METHODES.map((m) => (
+                      <option key={m} value={m}>
+                        {METHODE_LABELS[m]}
+                      </option>
+                    ))}
+                  </select>
+                  <button className="btn-ghost" onClick={() => removeProject(project)}>
+                    Supprimer
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <div className="panel">
           <h2 className="panel-title">Ajouter un membre</h2>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
@@ -159,7 +242,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
           <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
             <thead>
               <tr>
-                {["Nom", "Prénom", "Rôle", "Anniversaire", "Actif", ""].map((h) => (
+                {["Nom", "Prénom", "Rôle", "Projets", "Anniversaire", "Actif", ""].map((h) => (
                   <th key={h} style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #e2e8f0", color: "#64748b", fontSize: 12 }}>
                     {h}
                   </th>
@@ -184,6 +267,36 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", minWidth: 180 }}>
+                    {draftProjects.length === 0 ? (
+                      <span style={{ color: "#94a3b8", fontSize: 12 }}>Aucun projet</span>
+                    ) : (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                        {draftProjects.map((project) => {
+                          const on = emp.projectIds.includes(project.id);
+                          return (
+                            <button
+                              key={project.id}
+                              onClick={() => toggleEmployeeProject(emp, project.id)}
+                              title={METHODE_LABELS[project.methode]}
+                              style={{
+                                padding: "3px 8px",
+                                borderRadius: 999,
+                                fontSize: 11.5,
+                                fontWeight: 600,
+                                border: on ? "1px solid #2569f5" : "1px solid #e2e8f0",
+                                background: on ? "#eef2ff" : "#fff",
+                                color: on ? "#2569f5" : "#94a3b8",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {project.nom}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
                     <input

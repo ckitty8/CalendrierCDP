@@ -22,4 +22,13 @@ export interface Employee {
   role: string;
   active: boolean;
   birthday?: string; // ISO yyyy-mm-dd
+  projectIds: string[];
+}
+
+export type Methode = "cycle_v" | "scrum" | "kanban";
+
+export interface Project {
+  id: string;
+  nom: string;
+  methode: Methode;
 }

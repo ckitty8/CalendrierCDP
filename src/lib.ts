@@ -1,4 +1,4 @@
-import type { Employee } from "./types";
+import type { Employee, Methode } from "./types";
 
 export function fullName(emp: Pick<Employee, "nom" | "prenom">): string {
   return `${emp.nom} ${emp.prenom}`.trim();
@@ -14,6 +14,25 @@ export function slugify(text: string): string {
 }
 
 export const ROLES = ["Responsable", "Chef de projet", "Développeur", "Développeur stagiaire"] as const;
+
+export const METHODES: Methode[] = ["cycle_v", "scrum", "kanban"];
+
+export const METHODE_LABELS: Record<Methode, string> = {
+  cycle_v: "Cycle en V",
+  scrum: "Agile Scrum",
+  kanban: "Agile Kanban",
+};
+
+export function uniqueId(text: string, existingIds: string[], fallback = "item"): string {
+  const base = slugify(text) || fallback;
+  let id = base;
+  let i = 2;
+  while (existingIds.includes(id)) {
+    id = `${base}-${i}`;
+    i += 1;
+  }
+  return id;
+}
 
 export const MONTH_LABELS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
