@@ -154,11 +154,21 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                     />
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
-                    <input
-                      type="checkbox"
-                      checked={emp.active}
-                      onChange={(e) => updateEmployee(emp.id, { active: e.target.checked })}
-                    />
+                    <button
+                      onClick={() => updateEmployee(emp.id, { active: !emp.active })}
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: 999,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        border: "none",
+                        cursor: "pointer",
+                        background: emp.active ? "#ecfdf5" : "#f1f5f9",
+                        color: emp.active ? "#047857" : "#64748b",
+                      }}
+                    >
+                      {emp.active ? "Actif" : "Inactif"}
+                    </button>
                   </td>
                   <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
                     <button className="btn-ghost" onClick={() => removeEmployee(emp)}>
