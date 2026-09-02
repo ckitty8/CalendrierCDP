@@ -235,21 +235,86 @@ export default function Planning() {
         ))}
       </div>
 
-      <div className="flex gap-1 flex-wrap">
-        {MONTH_LABELS.map((label, i) => (
-          <button
-            key={label}
-            onClick={() => {
-              setMonth(i + 1);
-              clearSelection();
-            }}
-            className={`px-2.5 py-1 rounded-md text-xs font-medium ${
-              month === i + 1 ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            {label.slice(0, 3)}
-          </button>
-        ))}
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="flex gap-1 flex-wrap">
+          {MONTH_LABELS.map((label, i) => (
+            <button
+              key={label}
+              onClick={() => {
+                setMonth(i + 1);
+                clearSelection();
+              }}
+              className={`px-2.5 py-1 rounded-md text-xs font-medium ${
+                month === i + 1 ? "bg-brand-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {label.slice(0, 3)}
+            </button>
+          ))}
+        </div>
+
+        {selection.size > 1 && (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 flex items-center gap-2 flex-wrap shadow-sm">
+            <span className="text-sm font-medium text-slate-800">{selection.size} jour(s) sélectionné(s)</span>
+            <select
+              disabled={saving}
+              value={bulkStatusKey}
+              onChange={(e) => setBulkStatusKey(e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm min-w-[240px] disabled:opacity-50"
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <button
+              disabled={saving}
+              onClick={applyBulk}
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              Appliquer
+            </button>
+            <button
+              disabled={saving}
+              onClick={clearSelection}
+              className="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-slate-300 text-slate-500 hover:bg-slate-100"
+            >
+              Tout désélectionner
+            </button>
+          </div>
+        )}
+
+        {selectedSingleCell && (
+          <div className="rounded-xl border border-brand-200 bg-brand-50 p-3 space-y-2">
+            <div className="text-sm font-medium text-slate-800">
+              {(() => {
+                const emp = employees.find((e) => e.id === selectedSingleCell.employeeId);
+                return emp ? fullName(emp) : "";
+              })()} —{" "}
+              {new Date(selectedSingleCell.date + "T00:00:00Z").toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+              })}
+            </div>
+            <select
+              disabled={saving}
+              value={(() => {
+                const entry = dayIndex.get(cellKey(selectedSingleCell.employeeId, selectedSingleCell.date));
+                return entry ? `${entry.value}|${entry.category}` : "clear";
+              })()}
+              onChange={(e) => handleStatusChange(selectedSingleCell.employeeId, selectedSingleCell.date, e.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm min-w-[240px] disabled:opacity-50"
+            >
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.key} value={opt.key}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm select-none">
@@ -306,68 +371,6 @@ export default function Planning() {
         </table>
       </div>
 
-      {selection.size > 1 && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-3 flex-wrap sticky bottom-4 shadow-md">
-          <span className="text-sm font-medium text-slate-800">{selection.size} jour(s) sélectionné(s)</span>
-          <select
-            disabled={saving}
-            value={bulkStatusKey}
-            onChange={(e) => setBulkStatusKey(e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm min-w-[260px] disabled:opacity-50"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.key} value={opt.key}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <button
-            disabled={saving}
-            onClick={applyBulk}
-            className="px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-          >
-            Appliquer
-          </button>
-          <button
-            disabled={saving}
-            onClick={clearSelection}
-            className="px-3 py-1.5 rounded-md text-xs font-medium bg-white border border-slate-300 text-slate-500 hover:bg-slate-100"
-          >
-            Tout désélectionner
-          </button>
-        </div>
-      )}
-
-      {selectedSingleCell && (
-        <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 space-y-3">
-          <div className="text-sm font-medium text-slate-800">
-            {(() => {
-              const emp = employees.find((e) => e.id === selectedSingleCell.employeeId);
-              return emp ? fullName(emp) : "";
-            })()} —{" "}
-            {new Date(selectedSingleCell.date + "T00:00:00Z").toLocaleDateString("fr-FR", {
-              weekday: "long",
-              day: "2-digit",
-              month: "long",
-            })}
-          </div>
-          <select
-            disabled={saving}
-            value={(() => {
-              const entry = dayIndex.get(cellKey(selectedSingleCell.employeeId, selectedSingleCell.date));
-              return entry ? `${entry.value}|${entry.category}` : "clear";
-            })()}
-            onChange={(e) => handleStatusChange(selectedSingleCell.employeeId, selectedSingleCell.date, e.target.value)}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm min-w-[260px] disabled:opacity-50"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.key} value={opt.key}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
       </div>
     </div>
   );
