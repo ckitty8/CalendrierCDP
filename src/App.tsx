@@ -281,20 +281,29 @@ export default function App() {
               gap: 12,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button className="btn-ghost" onClick={() => setMonth((m) => Math.max(1, m - 1))} disabled={month === 1}>
-                ←
-              </button>
-              <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="select">
-                {MONTH_LABELS.map((label, i) => (
-                  <option key={label} value={i + 1}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {MONTH_LABELS.map((label, i) => {
+                const m = i + 1;
+                const active = m === month;
+                return (
+                  <button
+                    key={label}
+                    onClick={() => setMonth(m)}
+                    style={{
+                      padding: "6px 10px",
+                      fontSize: 13,
+                      fontWeight: active ? 700 : 500,
+                      borderRadius: 6,
+                      border: active ? "1px solid #2569f5" : "1px solid #e2e8f0",
+                      background: active ? "#2569f5" : "#fff",
+                      color: active ? "#fff" : "#334155",
+                      cursor: "pointer",
+                    }}
+                  >
                     {label}
-                  </option>
-                ))}
-              </select>
-              <button className="btn-ghost" onClick={() => setMonth((m) => Math.min(12, m + 1))} disabled={month === 12}>
-                →
-              </button>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="panel" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, padding: "8px 12px" }}>
