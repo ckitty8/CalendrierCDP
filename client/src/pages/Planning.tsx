@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useAppState } from "../AppStateContext";
 import { api, CATEGORY_COLORS, CATEGORY_LABELS } from "../api";
+import { useToast } from "../ToastContext";
 import type { DayCategory, DayValue } from "../types";
 import { MONTH_LABELS, daysInMonth, employeeColor, fullName, isWeekend, isoDate, weekdayLetter } from "../lib";
 import CongesSummary from "../components/CongesSummary";
@@ -40,6 +41,7 @@ function cellKey(employeeId: string, date: string): string {
 
 export default function Planning() {
   const { state, refresh } = useAppState();
+  const { notify } = useToast();
   const [month, setMonth] = useState(new Date().getUTCMonth() + 1);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [anchor, setAnchor] = useState<{ employeeId: string; date: string } | null>(null);
@@ -123,6 +125,9 @@ export default function Planning() {
         }
       }
       await refresh();
+      notify("Enregistré");
+    } catch {
+      notify("Échec de l'enregistrement", "error");
     } finally {
       setSaving(false);
     }
@@ -144,6 +149,9 @@ export default function Planning() {
       }
       await refresh();
       clearSelection();
+      notify(`${cells.length} jour(s) enregistré(s)`);
+    } catch {
+      notify("Échec de l'enregistrement", "error");
     } finally {
       setSaving(false);
     }
@@ -178,11 +186,17 @@ export default function Planning() {
   }
 
   async function fillPresence(cells: { employeeId: string; date: string }[]) {
-    if (cells.length === 0) return;
+    if (cells.length === 0) {
+      notify("Rien à remplir");
+      return;
+    }
     setSaving(true);
     try {
       await api.setDaysBulk(cells, { value: 1, category: "normal" });
       await refresh();
+      notify(`${cells.length} jour(s) rempli(s) en Présence`);
+    } catch {
+      notify("Échec de l'enregistrement", "error");
     } finally {
       setSaving(false);
     }

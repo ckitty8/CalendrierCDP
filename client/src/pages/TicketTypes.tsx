@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { api } from "../api";
 import { useAppState } from "../AppStateContext";
+import { useToast } from "../ToastContext";
 
 export default function TicketTypes() {
   const { state, refresh } = useAppState();
+  const { notify } = useToast();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -25,6 +27,9 @@ export default function TicketTypes() {
       await api.setTicketTypes(updated);
       await refresh();
       setDrafts({});
+      notify("Enregistré");
+    } catch {
+      notify("Échec de l'enregistrement", "error");
     } finally {
       setSaving(false);
     }

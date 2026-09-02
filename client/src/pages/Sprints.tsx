@@ -1,14 +1,17 @@
 import { Fragment, useEffect, useState } from "react";
 import { api } from "../api";
 import { useAppState } from "../AppStateContext";
+import { useToast } from "../ToastContext";
 import type { AllocationRow, CapacityRow } from "../types";
 import { formatJH, fullName } from "../lib";
 
 export default function Sprints() {
   const { state, refresh } = useAppState();
+  const { notify } = useToast();
   const [mode, setMode] = useState<"reel" | "previsionnel">("reel");
   const [data, setData] = useState<{ capacity: CapacityRow[]; allocation: AllocationRow[] } | null>(null);
   const [drafts, setDrafts] = useState<Record<string, { estimatedJH: string; spentJH: string }>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.getCapacity(mode).then(setData);
@@ -30,10 +33,26 @@ export default function Sprints() {
     return { estimatedJH: existing ? String(existing.estimatedJH) : "", spentJH: existing ? String(existing.spentJH) : "" };
   }
 
-  async function commitEstimation(sprintId: string, ticketTypeId: string) {
-    const d = draftFor(sprintId, ticketTypeId);
-    await api.setEstimation(sprintId, ticketTypeId, Number(d.estimatedJH) || 0, Number(d.spentJH) || 0);
-    await refresh();
+  async function saveEstimations() {
+    const keys = Object.keys(drafts);
+    if (keys.length === 0) return;
+    setSaving(true);
+    try {
+      await Promise.all(
+        keys.map((key) => {
+          const [sprintId, ticketTypeId] = key.split("|");
+          const d = drafts[key];
+          return api.setEstimation(sprintId, ticketTypeId, Number(d.estimatedJH) || 0, Number(d.spentJH) || 0);
+        })
+      );
+      await refresh();
+      setDrafts({});
+      notify("Estimations enregistrées");
+    } catch {
+      notify("Échec de l'enregistrement", "error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -155,7 +174,16 @@ export default function Sprints() {
       </div>
 
       <div>
-        <h2 className="font-semibold text-slate-900 mb-2">Estimé vs Réalisé (saisie manuelle depuis Azure DevOps)</h2>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h2 className="font-semibold text-slate-900">Estimé vs Réalisé (saisie manuelle depuis Azure DevOps)</h2>
+          <button
+            disabled={saving || Object.keys(drafts).length === 0}
+            onClick={saveEstimations}
+            className="px-3 py-1.5 rounded-md text-xs font-medium bg-brand-600 text-white disabled:opacity-40 disabled:bg-slate-300"
+          >
+            {saving ? "Enregistrement..." : `Enregistrer${Object.keys(drafts).length ? ` (${Object.keys(drafts).length})` : ""}`}
+          </button>
+        </div>
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-xs border-collapse">
             <thead>
@@ -195,7 +223,6 @@ export default function Sprints() {
                             onChange={(e) =>
                               setDrafts((prev) => ({ ...prev, [key]: { ...d, estimatedJH: e.target.value } }))
                             }
-                            onBlur={() => commitEstimation(s.id, t.id)}
                           />
                         </td>
                         <td className="border-b border-slate-100 p-0.5">
@@ -205,7 +232,6 @@ export default function Sprints() {
                             onChange={(e) =>
                               setDrafts((prev) => ({ ...prev, [key]: { ...d, spentJH: e.target.value } }))
                             }
-                            onBlur={() => commitEstimation(s.id, t.id)}
                           />
                         </td>
                       </Fragment>
