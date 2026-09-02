@@ -134,7 +134,11 @@ export default function Team() {
               <button
                 disabled={!dirty || savingId === emp.id}
                 onClick={() => saveRow(emp.id)}
-                className="px-2.5 py-1 rounded-md text-xs font-medium bg-brand-600 text-white disabled:opacity-40 disabled:bg-slate-300"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium border ${
+                  dirty
+                    ? "bg-brand-600 text-white border-brand-600 hover:bg-brand-700"
+                    : "bg-white text-slate-400 border-slate-200 cursor-not-allowed"
+                }`}
               >
                 {savingId === emp.id ? "..." : "Enregistrer"}
               </button>

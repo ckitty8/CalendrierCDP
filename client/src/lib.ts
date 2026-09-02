@@ -107,6 +107,30 @@ export function frenchPublicHolidays(year: number): Set<string> {
   return new Set([...fixed, ...mobile]);
 }
 
+/** Jours fériés français avec libellé, triés par date. */
+export function frenchPublicHolidaysList(year: number): { date: string; label: string }[] {
+  const addDays = (date: Date, days: number) => {
+    const d = new Date(date);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+  const easter = computeEasterSunday(year);
+  const list = [
+    { date: `${year}-01-01`, label: "Jour de l'an" },
+    { date: addDays(easter, 1), label: "Lundi de Pâques" },
+    { date: `${year}-05-01`, label: "Fête du travail" },
+    { date: `${year}-05-08`, label: "Victoire 1945" },
+    { date: addDays(easter, 39), label: "Ascension" },
+    { date: addDays(easter, 50), label: "Lundi de Pentecôte" },
+    { date: `${year}-07-14`, label: "Fête nationale" },
+    { date: `${year}-08-15`, label: "Assomption" },
+    { date: `${year}-11-01`, label: "Toussaint" },
+    { date: `${year}-11-11`, label: "Armistice" },
+    { date: `${year}-12-25`, label: "Noël" },
+  ];
+  return list.sort((a, b) => a.date.localeCompare(b.date));
+}
+
 /** Nombre de jours ouvrés (lun-ven) d'un mois. */
 export function joursOuvresDuMois(year: number, month: number): number {
   const n = daysInMonth(year, month);

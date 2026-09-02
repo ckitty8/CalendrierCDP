@@ -3,7 +3,7 @@ import { useAppState } from "../AppStateContext";
 import { api, CATEGORY_COLORS, CATEGORY_LABELS } from "../api";
 import { useToast } from "../ToastContext";
 import type { DayCategory, DayValue } from "../types";
-import { MONTH_LABELS, daysInMonth, employeeColor, fullName, isWeekend, isoDate, weekdayLetter } from "../lib";
+import { MONTH_LABELS, daysInMonth, employeeColor, formatBirthday, frenchPublicHolidaysList, fullName, isWeekend, isoDate, weekdayLetter } from "../lib";
 import CongesSummary from "../components/CongesSummary";
 
 const CATEGORY_ORDER: DayCategory[] = [
@@ -237,16 +237,32 @@ export default function Planning() {
         </span>
       </div>
 
-      <div className="flex gap-3 flex-wrap text-xs">
-        {(["normal", ...CATEGORY_ORDER] as DayCategory[]).map((c) => (
-          <div key={c} className="flex items-center gap-1.5">
-            <span
-              className="w-3 h-3 rounded-sm border border-slate-300"
-              style={{ background: CATEGORY_COLORS[c] }}
-            />
-            <span className="text-slate-600">{CATEGORY_LABELS[c]}</span>
-          </div>
-        ))}
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="flex gap-3 flex-wrap text-xs">
+          {(["normal", ...CATEGORY_ORDER] as DayCategory[]).map((c) => (
+            <div key={c} className="flex items-center gap-1.5">
+              <span
+                className="w-3 h-3 rounded-sm border border-slate-300"
+                style={{ background: CATEGORY_COLORS[c] }}
+              />
+              <span className="text-slate-600">{CATEGORY_LABELS[c]}</span>
+            </div>
+          ))}
+        </div>
+
+        <details className="text-xs">
+          <summary className="cursor-pointer font-medium text-slate-600 hover:text-slate-900">
+            Jours fériés {year}
+          </summary>
+          <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-slate-500">
+            {frenchPublicHolidaysList(year).map((h) => (
+              <li key={h.date} className="flex justify-between gap-2">
+                <span>{h.label}</span>
+                <span className="text-slate-400">{formatBirthday(h.date)}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
       </div>
 
       <div className="flex items-start justify-between flex-wrap gap-4">
