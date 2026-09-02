@@ -3,6 +3,7 @@ import { useAppState } from "../AppStateContext";
 import { api, CATEGORY_COLORS, CATEGORY_LABELS } from "../api";
 import type { DayCategory, DayValue } from "../types";
 import { MONTH_LABELS, daysInMonth, employeeColor, fullName, isWeekend, isoDate, weekdayLetter } from "../lib";
+import CongesSummary from "../components/CongesSummary";
 
 const CATEGORY_ORDER: DayCategory[] = [
   "ferie",
@@ -193,8 +194,14 @@ export default function Planning() {
     : null;
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-slate-900">Planning {year}</h1>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-4">Planning {year}</h1>
+        <CongesSummary />
+      </div>
+
+      <div className="space-y-4">
+      <h2 className="text-lg font-semibold text-slate-900">Calendrier</h2>
 
       <div className="flex items-center gap-2 flex-wrap">
         <button
@@ -361,6 +368,7 @@ export default function Planning() {
           </select>
         </div>
       )}
+      </div>
     </div>
   );
 }

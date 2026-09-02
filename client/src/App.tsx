@@ -1,17 +1,15 @@
-import { NavLink, Route, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import { useAppState } from "./AppStateContext";
 import { api } from "./api";
 import Dashboard from "./pages/Dashboard";
 import Planning from "./pages/Planning";
-import Conges from "./pages/Conges";
 import Sprints from "./pages/Sprints";
 import TicketTypes from "./pages/TicketTypes";
 import Team from "./pages/Team";
 
 const NAV = [
   { to: "/", label: "Tableau de bord", end: true },
-  { to: "/planning", label: "Planning" },
-  { to: "/conges", label: "Congés" },
+  { to: "/planning", label: "Planning & Congés" },
   { to: "/sprints", label: "Capacité & Sprints" },
   { to: "/tickets", label: "Types de ticket" },
   { to: "/equipe", label: "Équipe" },
@@ -66,7 +64,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/planning" element={<Planning />} />
-            <Route path="/conges" element={<Conges />} />
+            <Route path="/conges" element={<Navigate to="/planning" replace />} />
             <Route path="/sprints" element={<Sprints />} />
             <Route path="/tickets" element={<TicketTypes />} />
             <Route path="/equipe" element={<Team />} />

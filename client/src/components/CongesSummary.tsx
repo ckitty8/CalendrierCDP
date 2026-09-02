@@ -4,7 +4,7 @@ import { useAppState } from "../AppStateContext";
 import type { CongesRow, LeaveBalance } from "../types";
 import { MONTH_LABELS, formatJH, fullName } from "../lib";
 
-export default function Conges() {
+export default function CongesSummary() {
   const { state } = useAppState();
   const [data, setData] = useState<{ rollup: CongesRow[]; balances: LeaveBalance[] } | null>(null);
 
@@ -15,11 +15,13 @@ export default function Conges() {
   if (!state || !data) return <div className="text-slate-500">Chargement…</div>;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Congés {state.meta.currentYear}</h1>
-      <p className="text-sm text-slate-500 -mt-4">
-        Une demi-journée compte 0.5j travaillé et 0.5j congé. Écart = jours travaillés réels − forfait annuel (218j par défaut).
-      </p>
+    <div className="space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900">Congés {state.meta.currentYear}</h2>
+        <p className="text-sm text-slate-500">
+          Une demi-journée compte 0.5j travaillé et 0.5j congé. Écart = jours travaillés réels − forfait annuel (218j par défaut).
+        </p>
+      </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-xs border-collapse">
