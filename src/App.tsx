@@ -2,13 +2,11 @@ import { useState } from "react";
 import { usePlanningState } from "./usePlanningState";
 import PlanningPage from "./PlanningPage";
 import TeamPage from "./TeamPage";
-import CongesPage from "./CongesPage";
 
-type Page = "planning" | "conges" | "equipe";
+type Page = "planning" | "equipe";
 
 const NAV: { key: Page; label: string }[] = [
   { key: "planning", label: "Planning" },
-  { key: "conges", label: "Jours de congés" },
   { key: "equipe", label: "Équipe" },
 ];
 
@@ -44,9 +42,6 @@ export default function App() {
 
       <div hidden={page !== "planning"}>
         <PlanningPage state={state} setState={setState} />
-      </div>
-      <div hidden={page !== "conges"}>
-        <CongesPage state={state} setState={setState} />
       </div>
       <div hidden={page !== "equipe"}>
         <TeamPage state={state} setState={setState} />

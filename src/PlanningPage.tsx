@@ -12,6 +12,7 @@ import {
 } from "./lib";
 import type { PlanningState } from "./usePlanningState";
 import { exportMonthToExcel } from "./exportExcel";
+import CongesPage from "./CongesPage";
 
 const CATEGORY_META: { key: DayCategory; label: string; color: string }[] = [
   { key: "normal", label: "Présence", color: "#ffffff" },
@@ -43,6 +44,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
   );
   const [showInactive, setShowInactive] = useState(false);
   const [showHolidays, setShowHolidays] = useState(false);
+  const [showConges, setShowConges] = useState(true);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [anchor, setAnchor] = useState<{ row: number; col: number } | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -214,6 +216,32 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
           </button>
         </div>
       </header>
+
+      <div className="panel" style={{ marginBottom: 20 }}>
+        <button
+          onClick={() => setShowConges((s) => !s)}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+          }}
+        >
+          <h2 className="panel-title" style={{ margin: 0 }}>
+            Jours de congés
+          </h2>
+          <span style={{ color: "#64748b" }}>{showConges ? "−" : "+"}</span>
+        </button>
+        {showConges && (
+          <div style={{ marginTop: 10 }}>
+            <CongesPage state={state} setState={setState} embedded />
+          </div>
+        )}
+      </div>
 
       <div className="layout-grid">
         <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>

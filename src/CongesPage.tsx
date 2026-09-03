@@ -6,6 +6,7 @@ import type { PlanningState } from "./usePlanningState";
 interface CongesPageProps {
   state: PlanningState;
   setState: (updater: (prev: PlanningState) => PlanningState) => void;
+  embedded?: boolean;
 }
 
 interface MonthStats {
@@ -46,7 +47,7 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-export default function CongesPage({ state, setState }: CongesPageProps) {
+export default function CongesPage({ state, setState, embedded }: CongesPageProps) {
   const [showInactive, setShowInactive] = useState(false);
 
   const employees = useMemo(
@@ -84,18 +85,20 @@ export default function CongesPage({ state, setState }: CongesPageProps) {
 
   return (
     <div>
-      <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Jours de congés</h1>
-        <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
-          Calculé automatiquement à partir du Planning, avec les mêmes formules que le fichier Excel d'origine : "Trav."
-          compte les cellules à 1 (+ 0,5 pour les demi-journées) et "Cong." compte les cellules à 0 (+ 0,5 pour les
-          demi-journées) — jours fériés et fermetures inclus, comme dans le fichier. Les jours non saisis ne comptent nulle
-          part. "Total jour travaillé client" = jours travaillés dans l'année moins l'objectif imposé par le client (par
-          défaut 218, modifiable ci-dessous) — c'est le nombre de jours de congés qu'il reste à prendre pour que les jours
-          travaillés tombent pile sur cet objectif (en rouge si positif : il reste des congés à prendre ; en vert si 0 ou
-          négatif). Modifiez le Planning pour changer ces chiffres.
-        </p>
-      </header>
+      {!embedded && (
+        <header style={{ marginBottom: 16 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Jours de congés</h1>
+          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
+            Calculé automatiquement à partir du Planning, avec les mêmes formules que le fichier Excel d'origine : "Trav."
+            compte les cellules à 1 (+ 0,5 pour les demi-journées) et "Cong." compte les cellules à 0 (+ 0,5 pour les
+            demi-journées) — jours fériés et fermetures inclus, comme dans le fichier. Les jours non saisis ne comptent nulle
+            part. "Total jour travaillé client" = jours travaillés dans l'année moins l'objectif imposé par le client (par
+            défaut 218, modifiable ci-dessous) — c'est le nombre de jours de congés qu'il reste à prendre pour que les jours
+            travaillés tombent pile sur cet objectif (en rouge si positif : il reste des congés à prendre ; en vert si 0 ou
+            négatif). Modifiez le Planning pour changer ces chiffres.
+          </p>
+        </header>
+      )}
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20, marginBottom: 12 }}>
         <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569" }}>
