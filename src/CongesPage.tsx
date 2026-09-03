@@ -121,7 +121,7 @@ export default function CongesPage({ state, setState, embedded }: CongesPageProp
         </label>
       </div>
 
-      <div style={{ overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", maxHeight: "75vh" }}>
+      <div style={{ overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", maxHeight: "75vh", paddingBottom: 20 }}>
         <table style={{ borderCollapse: "collapse", fontSize: 12 }}>
           <thead>
             <tr>

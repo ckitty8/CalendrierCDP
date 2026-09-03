@@ -390,7 +390,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             </div>
           </div>
 
-          <div style={{ overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", maxHeight: "70vh" }}>
+          <div style={{ overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", maxHeight: "70vh", paddingBottom: 20 }}>
             <table style={{ borderCollapse: "collapse", fontSize: 12.5 }}>
               <thead>
                 <tr>

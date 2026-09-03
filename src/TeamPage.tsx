@@ -235,7 +235,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
           </div>
         )}
 
-        <div className="panel" style={{ overflowX: "auto" }}>
+        <div className="panel" style={{ overflowX: "auto", paddingBottom: 28 }}>
           <h2 className="panel-title">
             Membres ({draftEmployees.length}){dirty && <span style={{ color: "#b45309", fontWeight: 600, marginLeft: 8 }}>· modifications non enregistrées</span>}
           </h2>
