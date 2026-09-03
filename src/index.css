@@ -25,6 +25,13 @@ body {
   align-items: start;
 }
 
+@media (min-width: 861px) {
+  .planning-sidebar {
+    position: sticky;
+    top: 20px;
+  }
+}
+
 @media (max-width: 860px) {
   .page {
     padding: 12px 12px 40px;

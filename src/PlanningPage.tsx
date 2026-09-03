@@ -217,34 +217,8 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
         </div>
       </header>
 
-      <div className="panel" style={{ marginBottom: 20 }}>
-        <button
-          onClick={() => setShowConges((s) => !s)}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            cursor: "pointer",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: "100%",
-          }}
-        >
-          <h2 className="panel-title" style={{ margin: 0 }}>
-            Jours de congés
-          </h2>
-          <span style={{ color: "#64748b" }}>{showConges ? "−" : "+"}</span>
-        </button>
-        {showConges && (
-          <div style={{ marginTop: 10 }}>
-            <CongesPage state={state} setState={setState} embedded />
-          </div>
-        )}
-      </div>
-
       <div className="layout-grid">
-        <aside style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <aside className="planning-sidebar" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="panel">
             <h2 className="panel-title">Export</h2>
             <button className="btn-primary" onClick={handleExport} disabled={exporting} style={{ width: "100%" }}>
@@ -322,6 +296,19 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
         </aside>
 
         <main style={{ minWidth: 0 }}>
+          <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
+            <div
+              style={{
+                background: "#0f172a",
+                color: "#fff",
+                padding: "14px 18px",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                📅 Planning
+              </h2>
+            </div>
+            <div style={{ padding: 16 }}>
           <div
             style={{
               display: "flex",
@@ -484,6 +471,35 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                 ))}
               </tbody>
             </table>
+          </div>
+            </div>
+          </div>
+
+          <div className="panel" style={{ marginTop: 48, padding: 0, overflow: "hidden" }}>
+            <button
+              onClick={() => setShowConges((s) => !s)}
+              style={{
+                background: "#1e3a8a",
+                color: "#fff",
+                border: "none",
+                padding: "14px 18px",
+                cursor: "pointer",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                📋 Résumé des congés
+              </h2>
+              <span style={{ fontSize: 18, lineHeight: 1 }}>{showConges ? "−" : "+"}</span>
+            </button>
+            {showConges && (
+              <div style={{ padding: 16 }}>
+                <CongesPage state={state} setState={setState} embedded />
+              </div>
+            )}
           </div>
         </main>
       </div>
