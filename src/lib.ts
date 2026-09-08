@@ -1,4 +1,4 @@
-import type { Employee, Methode } from "./types";
+import type { DayEntry, Employee, Methode, TaskType } from "./types";
 
 export function fullName(emp: Pick<Employee, "nom" | "prenom">): string {
   return `${emp.nom} ${emp.prenom}`.trim();
@@ -22,6 +22,39 @@ export const METHODE_LABELS: Record<Methode, string> = {
   scrum: "Agile Scrum",
   kanban: "Agile Kanban",
 };
+
+/** Répartition par défaut des tâches d'un sprint (% du fichier Excel source). */
+export const DEFAULT_TASK_TYPES: TaskType[] = [
+  { id: "incident", nom: "Incident", pourcentage: 0.2 },
+  { id: "bug", nom: "Bug", pourcentage: 0.06 },
+  { id: "doc", nom: "Doc", pourcentage: 0.05 },
+  { id: "test-ar", nom: "Test / Aller-retour", pourcentage: 0.05 },
+  { id: "technique", nom: "Technique", pourcentage: 0.04 },
+  { id: "autres-sujets", nom: "Autres sujets", pourcentage: 0.06 },
+];
+
+/**
+ * Jours travaillés d'un collaborateur sur une période arbitraire (sprint),
+ * à partir des saisies du Planning : mêmes règles que le calcul "Travaillé"
+ * de la page Congés (1 = jour plein, 0,5 = demi-journée), mais sur les
+ * dates [dateDebut, dateFin] au lieu d'un mois calendaire.
+ */
+export function travailleSurPeriode(
+  employeeId: string,
+  dateDebut: string,
+  dateFin: string,
+  dayIndex: Map<string, DayEntry>
+): number {
+  if (!dateDebut || !dateFin) return 0;
+  let travaille = 0;
+  for (const entry of dayIndex.values()) {
+    if (entry.employeeId !== employeeId) continue;
+    if (entry.date < dateDebut || entry.date > dateFin) continue;
+    if (entry.value === 1) travaille += 1;
+    else if (entry.value === 0.5) travaille += 0.5;
+  }
+  return travaille;
+}
 
 export function uniqueId(text: string, existingIds: string[], fallback = "item"): string {
   const base = slugify(text) || fallback;

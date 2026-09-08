@@ -4749,5 +4749,16 @@
   }
  ],
  "projects": [],
- "objectifJoursTravailles": 218
+ "objectifJoursTravailles": 218,
+ "sprints": [],
+ "taskTypes": [
+  { "id": "incident", "nom": "Incident", "pourcentage": 0.2 },
+  { "id": "bug", "nom": "Bug", "pourcentage": 0.06 },
+  { "id": "doc", "nom": "Doc", "pourcentage": 0.05 },
+  { "id": "test-ar", "nom": "Test / Aller-retour", "pourcentage": 0.05 },
+  { "id": "technique", "nom": "Technique", "pourcentage": 0.04 },
+  { "id": "autres-sujets", "nom": "Autres sujets", "pourcentage": 0.06 }
+ ],
+ "reelJH": {},
+ "baremeVendeur": []
 }

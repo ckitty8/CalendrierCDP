@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { DayEntry, Employee, Project } from "./types";
+import type { BaremeEntry, DayEntry, Employee, Project, Sprint, TaskType } from "./types";
+import { DEFAULT_TASK_TYPES } from "./lib";
 import seedData from "./seedData.json";
 
 const STORAGE_KEY = "calendriercdp-planning-v1";
@@ -10,6 +11,11 @@ export interface PlanningState {
   days: DayEntry[];
   projects: Project[];
   objectifJoursTravailles: number;
+  sprints: Sprint[];
+  taskTypes: TaskType[];
+  /** JH "réel" saisis manuellement, clé `${sprintId}__${taskId}` ("us" pour la ligne US). */
+  reelJH: Record<string, number>;
+  baremeVendeur: BaremeEntry[];
 }
 
 function migrate(raw: Partial<PlanningState>): PlanningState {
@@ -19,6 +25,10 @@ function migrate(raw: Partial<PlanningState>): PlanningState {
     projects: raw.projects ?? [],
     employees: (raw.employees ?? []).map((e) => ({ ...e, projectIds: e.projectIds ?? [] })),
     objectifJoursTravailles: raw.objectifJoursTravailles ?? 218,
+    sprints: raw.sprints ?? [],
+    taskTypes: raw.taskTypes ?? DEFAULT_TASK_TYPES,
+    reelJH: raw.reelJH ?? {},
+    baremeVendeur: raw.baremeVendeur ?? [],
   };
 }
 

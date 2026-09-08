@@ -2,12 +2,14 @@ import { useState } from "react";
 import { usePlanningState } from "./usePlanningState";
 import PlanningPage from "./PlanningPage";
 import TeamPage from "./TeamPage";
+import SprintCapacityPage from "./SprintCapacityPage";
 
-type Page = "planning" | "equipe";
+type Page = "planning" | "equipe" | "sprints";
 
 const NAV: { key: Page; label: string }[] = [
   { key: "planning", label: "Planning" },
   { key: "equipe", label: "Équipe" },
+  { key: "sprints", label: "Capacité de sprint" },
 ];
 
 export default function App() {
@@ -45,6 +47,9 @@ export default function App() {
       </div>
       <div hidden={page !== "equipe"}>
         <TeamPage state={state} setState={setState} />
+      </div>
+      <div hidden={page !== "sprints"}>
+        <SprintCapacityPage state={state} setState={setState} />
       </div>
     </div>
   );
