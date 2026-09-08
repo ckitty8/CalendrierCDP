@@ -475,6 +475,28 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                   );
                 })}
                 <tr>
+                  <td colSpan={2} style={{ padding: "6px 8px", fontWeight: 700, color: "#64748b" }}>
+                    TT tous sauf US (Réel)
+                  </td>
+                  {sprints.map((sprint) => {
+                    const totalReelHorsUS = draftTaskTypes.reduce((s, t) => s + (draftReelJH[reelKey(sprint.id, t.id)] ?? 0), 0);
+                    return (
+                      <td key={sprint.id} style={{ ...cellStyle, fontWeight: 700, color: "#64748b" }}>
+                        {fmt(totalReelHorsUS)}
+                      </td>
+                    );
+                  })}
+                  <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc", color: "#64748b" }}>
+                    {fmt(
+                      sprints.reduce(
+                        (s, sprint) => s + draftTaskTypes.reduce((s2, t) => s2 + (draftReelJH[reelKey(sprint.id, t.id)] ?? 0), 0),
+                        0
+                      )
+                    )}
+                  </td>
+                  <td style={cellStyle}></td>
+                </tr>
+                <tr>
                   <td colSpan={2} style={{ padding: "6px 8px", fontWeight: 700 }}>
                     TT tout (Réel)
                   </td>
