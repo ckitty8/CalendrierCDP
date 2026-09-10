@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { BaremeEntry, DayEntry, Employee, Project, Sprint, TaskType, TimeEntry } from "./types";
+import type { DayEntry, Employee, Hotfix, Project, Sprint, TaskType, TimeEntry } from "./types";
 import { DEFAULT_TASK_TYPES } from "./lib";
 import seedData from "./seedData.json";
 
@@ -15,8 +15,8 @@ export interface PlanningState {
   taskTypes: TaskType[];
   /** JH "réel" saisis manuellement, clé `${sprintId}__${taskId}` ("us" pour la ligne US). */
   reelJH: Record<string, number>;
-  baremeVendeur: BaremeEntry[];
   timeEntries: TimeEntry[];
+  hotfixes: Hotfix[];
 }
 
 function migrate(raw: Partial<PlanningState>): PlanningState {
@@ -26,11 +26,11 @@ function migrate(raw: Partial<PlanningState>): PlanningState {
     projects: raw.projects ?? [],
     employees: (raw.employees ?? []).map((e) => ({ ...e, projectIds: e.projectIds ?? [] })),
     objectifJoursTravailles: raw.objectifJoursTravailles ?? 218,
-    sprints: raw.sprints ?? [],
+    sprints: (raw.sprints ?? []).map((s) => ({ ...s, version: s.version ?? "" })),
     taskTypes: raw.taskTypes ?? DEFAULT_TASK_TYPES,
     reelJH: raw.reelJH ?? {},
-    baremeVendeur: raw.baremeVendeur ?? [],
     timeEntries: raw.timeEntries ?? [],
+    hotfixes: raw.hotfixes ?? [],
   };
 }
 

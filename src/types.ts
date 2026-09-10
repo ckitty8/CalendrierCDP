@@ -38,19 +38,25 @@ export interface Sprint {
   nom: string;
   dateDebut: string; // ISO yyyy-mm-dd
   dateFin: string; // ISO yyyy-mm-dd
+  version: string; // nom/numéro de version associé au sprint
+}
+
+export type HotfixStatut = "ouvert" | "deploye";
+
+export interface Hotfix {
+  id: string;
+  titre: string;
+  version: string;
+  date: string; // ISO yyyy-mm-dd
+  statut: HotfixStatut;
+  sprintId?: string;
+  notes?: string;
 }
 
 export interface TaskType {
   id: string;
   nom: string;
   pourcentage: number; // fraction 0..1 (répartition JH d'un sprint)
-}
-
-/** Ligne du convertisseur heures -> JH ("barème vendeur" du fichier Excel). */
-export interface BaremeEntry {
-  id: string;
-  reference: string;
-  heures: number;
 }
 
 /** Temps saisi par un collaborateur sur un projet, pour une journée donnée. */

@@ -4751,18 +4751,18 @@
  "projects": [],
  "objectifJoursTravailles": 218,
  "sprints": [
-  { "id": "sprint-1", "nom": "Sprint 1", "dateDebut": "2026-01-01", "dateFin": "2026-01-31" },
-  { "id": "sprint-2", "nom": "Sprint 2", "dateDebut": "2026-02-01", "dateFin": "2026-02-28" },
-  { "id": "sprint-3", "nom": "Sprint 3", "dateDebut": "2026-03-01", "dateFin": "2026-03-31" },
-  { "id": "sprint-4", "nom": "Sprint 4", "dateDebut": "2026-04-01", "dateFin": "2026-04-30" },
-  { "id": "sprint-5", "nom": "Sprint 5", "dateDebut": "2026-05-01", "dateFin": "2026-05-31" },
-  { "id": "sprint-6", "nom": "Sprint 6", "dateDebut": "2026-06-01", "dateFin": "2026-06-30" },
-  { "id": "sprint-7", "nom": "Sprint 7", "dateDebut": "2026-07-01", "dateFin": "2026-07-31" },
-  { "id": "sprint-8", "nom": "Sprint 8", "dateDebut": "2026-08-01", "dateFin": "2026-08-31" },
-  { "id": "sprint-9", "nom": "Sprint 9", "dateDebut": "2026-09-01", "dateFin": "2026-09-30" },
-  { "id": "sprint-10", "nom": "Sprint 10", "dateDebut": "2026-10-01", "dateFin": "2026-10-31" },
-  { "id": "sprint-11", "nom": "Sprint 11", "dateDebut": "2026-11-01", "dateFin": "2026-11-30" },
-  { "id": "sprint-12", "nom": "Sprint 12", "dateDebut": "2026-12-01", "dateFin": "2026-12-31" }
+  { "id": "sprint-1", "nom": "Sprint 1", "dateDebut": "2026-01-01", "dateFin": "2026-01-31", "version": "" },
+  { "id": "sprint-2", "nom": "Sprint 2", "dateDebut": "2026-02-01", "dateFin": "2026-02-28", "version": "" },
+  { "id": "sprint-3", "nom": "Sprint 3", "dateDebut": "2026-03-01", "dateFin": "2026-03-31", "version": "" },
+  { "id": "sprint-4", "nom": "Sprint 4", "dateDebut": "2026-04-01", "dateFin": "2026-04-30", "version": "" },
+  { "id": "sprint-5", "nom": "Sprint 5", "dateDebut": "2026-05-01", "dateFin": "2026-05-31", "version": "" },
+  { "id": "sprint-6", "nom": "Sprint 6", "dateDebut": "2026-06-01", "dateFin": "2026-06-30", "version": "" },
+  { "id": "sprint-7", "nom": "Sprint 7", "dateDebut": "2026-07-01", "dateFin": "2026-07-31", "version": "" },
+  { "id": "sprint-8", "nom": "Sprint 8", "dateDebut": "2026-08-01", "dateFin": "2026-08-31", "version": "" },
+  { "id": "sprint-9", "nom": "Sprint 9", "dateDebut": "2026-09-01", "dateFin": "2026-09-30", "version": "" },
+  { "id": "sprint-10", "nom": "Sprint 10", "dateDebut": "2026-10-01", "dateFin": "2026-10-31", "version": "" },
+  { "id": "sprint-11", "nom": "Sprint 11", "dateDebut": "2026-11-01", "dateFin": "2026-11-30", "version": "" },
+  { "id": "sprint-12", "nom": "Sprint 12", "dateDebut": "2026-12-01", "dateFin": "2026-12-31", "version": "" }
  ],
  "taskTypes": [
   { "id": "incident", "nom": "Incident", "pourcentage": 0.2 },
@@ -4779,14 +4779,6 @@
   "sprint-1__doc": 1,
   "sprint-1__technique": 3.857142857142857
  },
- "baremeVendeur": [
-  { "id": "ligne-1", "reference": "28739", "heures": 4 },
-  { "id": "ligne-2", "reference": "29420", "heures": 4 },
-  { "id": "ligne-3", "reference": "27932", "heures": 33.15 },
-  { "id": "ligne-4", "reference": "29404", "heures": 8.3 },
-  { "id": "ligne-5", "reference": "27917", "heures": 2 },
-  { "id": "ligne-6", "reference": "28269", "heures": 17.28 },
-  { "id": "ligne-7", "reference": "28269", "heures": 32.1 }
- ],
- "timeEntries": []
+ "timeEntries": [],
+ "hotfixes": []
 }

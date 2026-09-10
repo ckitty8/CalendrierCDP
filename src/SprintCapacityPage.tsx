@@ -1,15 +1,17 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
-import type { BaremeEntry, DayEntry, Sprint, TaskType } from "./types";
+import type { DayEntry, Hotfix, Sprint, TaskType } from "./types";
 import { ROLES, fullName, travailleSurPeriode, uniqueId } from "./lib";
 import type { PlanningState } from "./usePlanningState";
 
 /** Rôles qui comptent dans la capacité de sprint (fichier source : seuls les développeurs sont dénombrés, pas le Responsable/PO). */
 const ROLES_CAPACITE: string[] = [ROLES[2], ROLES[3]]; // "Développeur", "Développeur stagiaire"
 
-const HEURES_PAR_JOUR = 7;
-
 function reelKey(sprintId: string, taskId: string): string {
   return `${sprintId}__${taskId}`;
+}
+
+function sprintLabel(sprint: Sprint): string {
+  return sprint.version.trim() ? `${sprint.nom} (${sprint.version.trim()})` : sprint.nom;
 }
 
 interface SprintCapacityPageProps {
@@ -29,10 +31,12 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
   const [draftSprints, setDraftSprints] = useState<Sprint[]>(state.sprints);
   const [draftTaskTypes, setDraftTaskTypes] = useState<TaskType[]>(state.taskTypes);
   const [draftReelJH, setDraftReelJH] = useState<Record<string, number>>(state.reelJH);
-  const [draftBareme, setDraftBareme] = useState<BaremeEntry[]>(state.baremeVendeur);
+  const [draftHotfixes, setDraftHotfixes] = useState<Hotfix[]>(state.hotfixes);
   const [dirty, setDirty] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [newTaskNom, setNewTaskNom] = useState("");
+  const [newHotfixTitre, setNewHotfixTitre] = useState("");
+  const [newHotfixVersion, setNewHotfixVersion] = useState("");
 
   useEffect(() => {
     if (!dirty) setDraftSprints(state.sprints);
@@ -47,8 +51,8 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
   }, [state.reelJH, dirty]);
 
   useEffect(() => {
-    if (!dirty) setDraftBareme(state.baremeVendeur);
-  }, [state.baremeVendeur, dirty]);
+    if (!dirty) setDraftHotfixes(state.hotfixes);
+  }, [state.hotfixes, dirty]);
 
   const employees = useMemo(
     () => state.employees.filter((e) => e.active && ROLES_CAPACITE.includes(e.role)),
@@ -103,7 +107,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
   function addSprint() {
     const n = draftSprints.length + 1;
     const id = uniqueId(`sprint-${n}`, draftSprints.map((s) => s.id), "sprint");
-    const sprint: Sprint = { id, nom: `Sprint ${n}`, dateDebut: "", dateFin: "" };
+    const sprint: Sprint = { id, nom: `Sprint ${n}`, dateDebut: "", dateFin: "", version: "" };
     const next = [...draftSprints, sprint];
     setDraftSprints(next);
     setState((prev) => ({ ...prev, sprints: next }));
@@ -160,22 +164,41 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
     setDirty(true);
   }
 
-  function addBaremeEntry() {
-    const entry: BaremeEntry = { id: uniqueId(`ligne-${draftBareme.length + 1}`, draftBareme.map((b) => b.id), "ligne"), reference: "", heures: 0 };
-    const next = [...draftBareme, entry];
-    setDraftBareme(next);
-    setState((prev) => ({ ...prev, baremeVendeur: next }));
+  function addHotfix() {
+    if (!newHotfixTitre.trim()) return;
+    const id = uniqueId(`${newHotfixTitre}-${draftHotfixes.length + 1}`, draftHotfixes.map((h) => h.id), "hotfix");
+    const hotfix: Hotfix = {
+      id,
+      titre: newHotfixTitre.trim(),
+      version: newHotfixVersion.trim(),
+      date: new Date().toISOString().slice(0, 10),
+      statut: "ouvert",
+    };
+    const next = [hotfix, ...draftHotfixes];
+    setDraftHotfixes(next);
+    setState((prev) => ({ ...prev, hotfixes: next }));
+    setNewHotfixTitre("");
+    setNewHotfixVersion("");
   }
 
-  function editBaremeEntry(id: string, patch: Partial<BaremeEntry>) {
-    setDraftBareme((prev) => prev.map((b) => (b.id === id ? { ...b, ...patch } : b)));
+  function editHotfix(id: string, patch: Partial<Hotfix>) {
+    setDraftHotfixes((prev) => prev.map((h) => (h.id === id ? { ...h, ...patch } : h)));
     setDirty(true);
   }
 
-  function removeBaremeEntry(entry: BaremeEntry) {
-    const next = draftBareme.filter((b) => b.id !== entry.id);
-    setDraftBareme(next);
-    setState((prev) => ({ ...prev, baremeVendeur: next }));
+  function toggleHotfixStatut(hotfix: Hotfix) {
+    const next = draftHotfixes.map((h) =>
+      h.id === hotfix.id ? { ...h, statut: h.statut === "ouvert" ? ("deploye" as const) : ("ouvert" as const) } : h
+    );
+    setDraftHotfixes(next);
+    setState((prev) => ({ ...prev, hotfixes: next }));
+  }
+
+  function removeHotfix(hotfix: Hotfix) {
+    if (!confirm(`Supprimer le hotfix "${hotfix.titre}" ?`)) return;
+    const next = draftHotfixes.filter((h) => h.id !== hotfix.id);
+    setDraftHotfixes(next);
+    setState((prev) => ({ ...prev, hotfixes: next }));
   }
 
   function saveAll() {
@@ -184,7 +207,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
       sprints: draftSprints,
       taskTypes: draftTaskTypes,
       reelJH: draftReelJH,
-      baremeVendeur: draftBareme,
+      hotfixes: draftHotfixes,
     }));
     setDirty(false);
     setSavedFlash(true);
@@ -243,6 +266,16 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       onChange={(e) => editSprint(sprint.id, { dateFin: e.target.value })}
                     />
                   </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
+                    Version
+                    <input
+                      className="input"
+                      style={{ width: 110 }}
+                      placeholder="v1.2.0"
+                      value={sprint.version}
+                      onChange={(e) => editSprint(sprint.id, { version: e.target.value })}
+                    />
+                  </label>
                   <button className="btn-ghost" onClick={() => removeSprint(sprint)}>
                     Supprimer
                   </button>
@@ -268,7 +301,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                   <th style={{ ...headStyle, textAlign: "left" }}>Collaborateur</th>
                   {sprints.map((s) => (
                     <th key={s.id} style={headStyle}>
-                      {s.nom}
+                      {sprintLabel(s)}
                     </th>
                   ))}
                   <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Total</th>
@@ -321,7 +354,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                   <th style={headStyle}>%</th>
                   {sprints.map((s) => (
                     <th key={s.id} style={headStyle}>
-                      {s.nom}
+                      {sprintLabel(s)}
                     </th>
                   ))}
                   <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Total</th>
@@ -423,7 +456,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
             <h2 className="panel-title">Suivi réel — Estimé vs Réel (JH)</h2>
             <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
               L'Estimé reprend la répartition ci-dessus. Saisissez le Réel (JH réellement passés) au fur et à mesure du
-              sprint — utilisez au besoin le convertisseur heures → JH ci-dessous.
+              sprint.
             </p>
             <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
@@ -432,7 +465,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                   <th style={{ ...headStyle, textAlign: "left" }}></th>
                   {sprints.map((s) => (
                     <th key={s.id} style={headStyle}>
-                      {s.nom}
+                      {sprintLabel(s)}
                     </th>
                   ))}
                   <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Total</th>
@@ -533,54 +566,121 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
           </div>
         )}
 
-        <div className="panel">
-          <h2 className="panel-title">Barème vendeur — convertisseur heures → JH</h2>
+        <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
+          <h2 className="panel-title">
+            Hotfix ({draftHotfixes.length}){dirty && <span style={{ color: "#b45309", fontWeight: 600, marginLeft: 8 }}>· modifications non enregistrées</span>}
+          </h2>
           <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
-            Listez les heures passées (ex. relevé Azure DevOps) pour obtenir un total en JH (÷ {HEURES_PAR_JOUR}h/jour),
-            à reporter ensuite dans une case "Réel" ci-dessus.
+            Suivez les correctifs urgents déployés en dehors du cycle normal, en les rattachant si besoin à un sprint/version.
           </p>
-          {draftBareme.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
-              {draftBareme.map((entry) => (
-                <div key={entry.id} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <input
-                    className="input"
-                    style={{ flex: "1 1 200px" }}
-                    placeholder="Référence (ticket, vendeur...)"
-                    value={entry.reference}
-                    onChange={(e) => editBaremeEntry(entry.id, { reference: e.target.value })}
-                  />
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
-                    Heures
-                    <input
-                      className="input"
-                      type="number"
-                      min={0}
-                      step="0.1"
-                      style={{ width: 80 }}
-                      value={entry.heures}
-                      onChange={(e) => {
-                        const v = Number(e.target.value);
-                        if (!Number.isNaN(v)) editBaremeEntry(entry.id, { heures: v });
-                      }}
-                    />
-                  </label>
-                  <button className="btn-ghost" onClick={() => removeBaremeEntry(entry)}>
-                    Supprimer
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-            <button className="btn-secondary" onClick={addBaremeEntry}>
-              + Ajouter une ligne
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end", marginBottom: 12 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              Titre du hotfix
+              <input
+                className="input"
+                style={{ minWidth: 220 }}
+                value={newHotfixTitre}
+                onChange={(e) => setNewHotfixTitre(e.target.value)}
+                placeholder="Correctif erreur 500 sur export"
+              />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              Version
+              <input
+                className="input"
+                style={{ width: 110 }}
+                value={newHotfixVersion}
+                onChange={(e) => setNewHotfixVersion(e.target.value)}
+                placeholder="v1.2.1"
+              />
+            </label>
+            <button className="btn-primary" onClick={addHotfix} disabled={!newHotfixTitre.trim()}>
+              + Ajouter un hotfix
             </button>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#1e3a8a" }}>
-              Total : {fmt(draftBareme.reduce((s, b) => s + b.heures, 0))} h ={" "}
-              {fmt(draftBareme.reduce((s, b) => s + b.heures, 0) / HEURES_PAR_JOUR)} JH
-            </p>
           </div>
+
+          {draftHotfixes.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>Aucun hotfix pour le moment.</p>
+          ) : (
+            <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
+              <thead>
+                <tr>
+                  <th style={{ ...headStyle, textAlign: "left" }}>Titre</th>
+                  <th style={headStyle}>Version</th>
+                  <th style={headStyle}>Date</th>
+                  <th style={headStyle}>Sprint lié</th>
+                  <th style={headStyle}>Statut</th>
+                  <th style={headStyle}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {draftHotfixes.map((h) => (
+                  <tr key={h.id}>
+                    <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                      <input
+                        className="input"
+                        style={{ minWidth: 200 }}
+                        value={h.titre}
+                        onChange={(e) => editHotfix(h.id, { titre: e.target.value })}
+                      />
+                    </td>
+                    <td style={{ ...cellStyle, padding: "4px 6px" }}>
+                      <input
+                        className="input"
+                        style={{ width: 90 }}
+                        value={h.version}
+                        onChange={(e) => editHotfix(h.id, { version: e.target.value })}
+                      />
+                    </td>
+                    <td style={{ ...cellStyle, padding: "4px 6px" }}>
+                      <input
+                        className="input"
+                        type="date"
+                        value={h.date}
+                        onChange={(e) => editHotfix(h.id, { date: e.target.value })}
+                      />
+                    </td>
+                    <td style={{ ...cellStyle, padding: "4px 6px" }}>
+                      <select
+                        className="input"
+                        value={h.sprintId ?? ""}
+                        onChange={(e) => editHotfix(h.id, { sprintId: e.target.value || undefined })}
+                      >
+                        <option value="">—</option>
+                        {draftSprints.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {sprintLabel(s)}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td style={cellStyle}>
+                      <button
+                        onClick={() => toggleHotfixStatut(h)}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          border: "none",
+                          cursor: "pointer",
+                          background: h.statut === "deploye" ? "#ecfdf5" : "#fff7ed",
+                          color: h.statut === "deploye" ? "#047857" : "#c2410c",
+                        }}
+                      >
+                        {h.statut === "deploye" ? "Déployé" : "Ouvert"}
+                      </button>
+                    </td>
+                    <td style={cellStyle}>
+                      <button className="btn-ghost" onClick={() => removeHotfix(h)}>
+                        Supprimer
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {(sprints.length === 0 || employees.length === 0) && (
