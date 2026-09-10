@@ -52,3 +52,12 @@ export interface BaremeEntry {
   reference: string;
   heures: number;
 }
+
+/** Temps saisi par un collaborateur sur un projet, pour une journée donnée. */
+export interface TimeEntry {
+  id: string;
+  employeeId: string;
+  projectId: string;
+  date: string; // ISO yyyy-mm-dd
+  heures: number; // JH
+}

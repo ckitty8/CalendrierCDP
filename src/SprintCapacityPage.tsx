@@ -1,7 +1,10 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { BaremeEntry, DayEntry, Sprint, TaskType } from "./types";
-import { fullName, travailleSurPeriode, uniqueId } from "./lib";
+import { ROLES, fullName, travailleSurPeriode, uniqueId } from "./lib";
 import type { PlanningState } from "./usePlanningState";
+
+/** Rôles qui comptent dans la capacité de sprint (fichier source : seuls les développeurs sont dénombrés, pas le Responsable/PO). */
+const ROLES_CAPACITE: string[] = [ROLES[2], ROLES[3]]; // "Développeur", "Développeur stagiaire"
 
 const HEURES_PAR_JOUR = 7;
 
@@ -47,7 +50,10 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
     if (!dirty) setDraftBareme(state.baremeVendeur);
   }, [state.baremeVendeur, dirty]);
 
-  const employees = useMemo(() => state.employees.filter((e) => e.active), [state.employees]);
+  const employees = useMemo(
+    () => state.employees.filter((e) => e.active && ROLES_CAPACITE.includes(e.role)),
+    [state.employees]
+  );
 
   const dayIndex = useMemo(() => {
     const m = new Map<string, DayEntry>();
@@ -252,6 +258,10 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
         {sprints.length > 0 && employees.length > 0 && (
           <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
             <h2 className="panel-title">Jours de travail par sprint</h2>
+            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
+              Seuls les rôles "Développeur" et "Développeur stagiaire" comptent dans la capacité (le Responsable/PO n'est
+              pas décompté), comme dans le fichier source.
+            </p>
             <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr>
@@ -577,7 +587,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
           <div className="panel">
             <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>
               {employees.length === 0
-                ? "Aucun collaborateur actif — ajoutez des membres dans la page Équipe."
+                ? "Aucun collaborateur actif avec le rôle Développeur/Développeur stagiaire — vérifiez les rôles dans la page Équipe."
                 : "Ajoutez au moins un sprint (dates de début et de fin) pour voir les calculs de capacité."}
             </p>
           </div>

@@ -3,13 +3,15 @@ import { usePlanningState } from "./usePlanningState";
 import PlanningPage from "./PlanningPage";
 import TeamPage from "./TeamPage";
 import SprintCapacityPage from "./SprintCapacityPage";
+import TimeTrackingPage from "./TimeTrackingPage";
 
-type Page = "planning" | "equipe" | "sprints";
+type Page = "planning" | "equipe" | "sprints" | "temps";
 
 const NAV: { key: Page; label: string }[] = [
   { key: "planning", label: "Planning" },
   { key: "equipe", label: "Équipe" },
   { key: "sprints", label: "Capacité de sprint" },
+  { key: "temps", label: "Temps par projet" },
 ];
 
 export default function App() {
@@ -50,6 +52,9 @@ export default function App() {
       </div>
       <div hidden={page !== "sprints"}>
         <SprintCapacityPage state={state} setState={setState} />
+      </div>
+      <div hidden={page !== "temps"}>
+        <TimeTrackingPage state={state} setState={setState} />
       </div>
     </div>
   );

@@ -28,9 +28,9 @@ export const DEFAULT_TASK_TYPES: TaskType[] = [
   { id: "incident", nom: "Incident", pourcentage: 0.2 },
   { id: "bug", nom: "Bug", pourcentage: 0.06 },
   { id: "doc", nom: "Doc", pourcentage: 0.05 },
-  { id: "test-ar", nom: "Test / Aller-retour", pourcentage: 0.05 },
+  { id: "test-ar", nom: "Test / Aller-retour", pourcentage: 0.09 },
   { id: "technique", nom: "Technique", pourcentage: 0.04 },
-  { id: "autres-sujets", nom: "Autres sujets", pourcentage: 0.06 },
+  { id: "autres-sujets", nom: "Autres sujets", pourcentage: 0.2 },
 ];
 
 /**
@@ -103,6 +103,19 @@ export function weekOfYear(dateISO: string): number {
   const yearStart = Date.UTC(d.getUTCFullYear(), 0, 1);
   const dayOfYear = Math.floor((d.getTime() - yearStart) / 86400000);
   return Math.floor(dayOfYear / 7) + 1;
+}
+
+/** Les 7 dates ISO d'une "semaine" au sens de weekOfYear (bloc de 7 jours depuis le 1er janvier). */
+export function weekDates(dateISO: string): string[] {
+  const week = weekOfYear(dateISO);
+  const year = Number(dateISO.slice(0, 4));
+  const yearStart = Date.UTC(year, 0, 1);
+  const startOfWeek = yearStart + (week - 1) * 7 * 86400000;
+  const dates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    dates.push(new Date(startOfWeek + i * 86400000).toISOString().slice(0, 10));
+  }
+  return dates;
 }
 
 export function weekdayLetter(dateISO: string): string {
