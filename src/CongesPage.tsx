@@ -7,6 +7,7 @@ interface CongesPageProps {
   state: PlanningState;
   setState: (updater: (prev: PlanningState) => PlanningState) => void;
   embedded?: boolean;
+  projectId?: string;
 }
 
 interface MonthStats {
@@ -47,12 +48,12 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1);
 }
 
-export default function CongesPage({ state, setState, embedded }: CongesPageProps) {
+export default function CongesPage({ state, setState, embedded, projectId }: CongesPageProps) {
   const [showInactive, setShowInactive] = useState(false);
 
   const employees = useMemo(
-    () => state.employees.filter((e) => e.active || showInactive),
-    [state.employees, showInactive]
+    () => state.employees.filter((e) => (e.active || showInactive) && (!projectId || e.projectIds.includes(projectId))),
+    [state.employees, showInactive, projectId]
   );
 
   const dayIndex = useMemo(() => {

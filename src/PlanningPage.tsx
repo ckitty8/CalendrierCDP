@@ -42,6 +42,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
   const [month, setMonth] = useState(() =>
     today.getFullYear() === state.year ? today.getMonth() + 1 : 1
   );
+  const [projectFilter, setProjectFilter] = useState<string>("");
   const [showInactive, setShowInactive] = useState(false);
   const [showHolidays, setShowHolidays] = useState(false);
   const [showConges, setShowConges] = useState(true);
@@ -57,8 +58,9 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
   }, [state.days, dirty]);
 
   const employees = useMemo(
-    () => state.employees.filter((e) => e.active || showInactive),
-    [state.employees, showInactive]
+    () =>
+      state.employees.filter((e) => (e.active || showInactive) && (!projectFilter || e.projectIds.includes(projectFilter))),
+    [state.employees, showInactive, projectFilter]
   );
 
   const nDays = daysInMonth(state.year, month);
@@ -198,7 +200,10 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
         }}
       >
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Planning {state.year}</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>
+            Planning {state.year}
+            {projectFilter && ` — ${state.projects.find((p) => p.id === projectFilter)?.nom ?? ""}`}
+          </h1>
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
             Clic : sélection simple · Ctrl/Cmd+clic : ajouter/retirer · Maj+clic : sélection rectangulaire
           </p>
@@ -219,6 +224,20 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
 
       <div className="layout-grid">
         <aside className="planning-sidebar" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {state.projects.length > 0 && (
+            <div className="panel">
+              <h2 className="panel-title">Projet</h2>
+              <select className="input" style={{ width: "100%" }} value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}>
+                <option value="">Tous les projets</option>
+                {state.projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nom}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="panel">
             <h2 className="panel-title">Export</h2>
             <button className="btn-primary" onClick={handleExport} disabled={exporting} style={{ width: "100%" }}>
@@ -497,7 +516,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             </button>
             {showConges && (
               <div style={{ padding: 16 }}>
-                <CongesPage state={state} setState={setState} embedded />
+                <CongesPage state={state} setState={setState} embedded projectId={projectFilter || undefined} />
               </div>
             )}
           </div>

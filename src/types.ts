@@ -31,6 +31,8 @@ export interface Project {
   id: string;
   nom: string;
   methode: Methode;
+  /** Si coché, les membres de ce projet comptent dans la page Capacité de sprint. */
+  capaciteSprint: boolean;
 }
 
 export interface Sprint {

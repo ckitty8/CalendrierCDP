@@ -54,10 +54,12 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
     if (!dirty) setDraftHotfixes(state.hotfixes);
   }, [state.hotfixes, dirty]);
 
-  const employees = useMemo(
-    () => state.employees.filter((e) => e.active && ROLES_CAPACITE.includes(e.role)),
-    [state.employees]
-  );
+  const employees = useMemo(() => {
+    const projetsAvecCapacite = new Set(state.projects.filter((p) => p.capaciteSprint).map((p) => p.id));
+    return state.employees.filter(
+      (e) => e.active && ROLES_CAPACITE.includes(e.role) && e.projectIds.some((id) => projetsAvecCapacite.has(id))
+    );
+  }, [state.employees, state.projects]);
 
   const dayIndex = useMemo(() => {
     const m = new Map<string, DayEntry>();
@@ -293,7 +295,8 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
             <h2 className="panel-title">Jours de travail par sprint</h2>
             <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
               Seuls les rôles "Développeur" et "Développeur stagiaire" comptent dans la capacité (le Responsable/PO n'est
-              pas décompté), comme dans le fichier source.
+              pas décompté), et seulement s'ils sont sur un projet où la case "Capacité de sprint" est cochée (page
+              Administration).
             </p>
             <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
@@ -687,7 +690,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
           <div className="panel">
             <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>
               {employees.length === 0
-                ? "Aucun collaborateur actif avec le rôle Développeur/Développeur stagiaire — vérifiez les rôles dans la page Équipe."
+                ? "Aucun collaborateur actif avec le rôle Développeur/Développeur stagiaire sur un projet avec \"Capacité de sprint\" coché — vérifiez la page Administration."
                 : "Ajoutez au moins un sprint (dates de début et de fin) pour voir les calculs de capacité."}
             </p>
           </div>

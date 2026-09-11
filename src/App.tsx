@@ -9,7 +9,7 @@ type Page = "planning" | "equipe" | "sprints" | "temps";
 
 const NAV: { key: Page; label: string }[] = [
   { key: "planning", label: "Planning" },
-  { key: "equipe", label: "Équipe" },
+  { key: "equipe", label: "Administration" },
   { key: "sprints", label: "Capacité de sprint" },
   { key: "temps", label: "Temps par projet" },
 ];
@@ -20,7 +20,7 @@ export default function App() {
 
   return (
     <div className="page" style={{ maxWidth: 1400, margin: "0 auto" }}>
-      <nav style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+      <nav style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
         {NAV.map((n) => {
           const active = n.key === page;
           return (

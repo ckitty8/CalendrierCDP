@@ -23,7 +23,7 @@ function migrate(raw: Partial<PlanningState>): PlanningState {
   return {
     year: raw.year!,
     days: raw.days ?? [],
-    projects: raw.projects ?? [],
+    projects: (raw.projects ?? []).map((p) => ({ ...p, capaciteSprint: p.capaciteSprint ?? true })),
     employees: (raw.employees ?? []).map((e) => ({ ...e, projectIds: e.projectIds ?? [] })),
     objectifJoursTravailles: raw.objectifJoursTravailles ?? 218,
     sprints: (raw.sprints ?? []).map((s) => ({ ...s, version: s.version ?? "" })),
