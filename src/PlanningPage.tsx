@@ -18,7 +18,7 @@ const CATEGORY_META: { key: DayCategory; label: string; color: string }[] = [
   { key: "normal", label: "Présence", color: "#ffffff" },
   { key: "ferie", label: "Jour férié", color: "#c65911" },
   { key: "fermeture", label: "Fermeture", color: "#806000" },
-  { key: "absent_projet", label: "Absent (hors projet)", color: "#7b7b7b" },
+  { key: "absent_projet", label: "Absent (hors équipe)", color: "#7b7b7b" },
   { key: "conge_previsionnel", label: "Congé prévisionnel", color: "#ffc000" },
   { key: "conge_valide", label: "Congé validé", color: "#a9d08e" },
 ];
@@ -56,6 +56,12 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
   useEffect(() => {
     if (!dirty) setDraftDays(state.days);
   }, [state.days, dirty]);
+
+  useEffect(() => {
+    if (!state.projects.some((p) => p.id === projectFilter)) {
+      setProjectFilter(state.projects[0]?.id ?? "");
+    }
+  }, [state.projects, projectFilter]);
 
   const employees = useMemo(
     () =>
@@ -222,22 +228,42 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
         </div>
       </header>
 
+      {state.projects.length === 0 ? (
+        <div className="panel">
+          <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>
+            Aucune équipe pour le moment — créez-en une dans la page Administration pour afficher son planning.
+          </p>
+        </div>
+      ) : (
+      <>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
+        {state.projects.map((p) => {
+          const active = p.id === projectFilter;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setProjectFilter(p.id)}
+              style={{
+                padding: "10px 18px",
+                fontSize: 14,
+                fontWeight: 600,
+                border: "none",
+                borderBottom: active ? "2px solid #2569f5" : "2px solid transparent",
+                background: "none",
+                color: active ? "#2569f5" : "#64748b",
+                cursor: "pointer",
+                marginBottom: -1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {p.nom}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="layout-grid">
         <aside className="planning-sidebar" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {state.projects.length > 0 && (
-            <div className="panel">
-              <h2 className="panel-title">Projet</h2>
-              <select className="input" style={{ width: "100%" }} value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}>
-                <option value="">Tous les projets</option>
-                {state.projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nom}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           <div className="panel">
             <h2 className="panel-title">Export</h2>
             <button className="btn-primary" onClick={handleExport} disabled={exporting} style={{ width: "100%" }}>
@@ -522,6 +548,8 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
           </div>
         </main>
       </div>
+      </>
+      )}
     </div>
   );
 }

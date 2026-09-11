@@ -11,7 +11,7 @@ const NAV: { key: Page; label: string }[] = [
   { key: "planning", label: "Planning" },
   { key: "equipe", label: "Administration" },
   { key: "sprints", label: "Capacité de sprint" },
-  { key: "temps", label: "Temps par projet" },
+  { key: "temps", label: "Temps par équipe" },
 ];
 
 export default function App() {

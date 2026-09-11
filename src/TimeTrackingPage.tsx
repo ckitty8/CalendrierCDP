@@ -129,9 +129,9 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
   return (
     <div>
       <header style={{ marginBottom: 16 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Temps par projet</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Temps par équipe</h1>
         <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
-          Chaque collaborateur saisit ici le temps (en JH) passé sur chacun de ses projets, semaine par semaine.
+          Chaque collaborateur saisit ici le temps (en JH) passé sur chacune de ses équipes, semaine par semaine.
         </p>
       </header>
 
@@ -139,7 +139,7 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
         <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
           <h2 className="panel-title">Saisir mes temps</h2>
           {employees.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>Aucun collaborateur actif — ajoutez des membres dans la page Équipe.</p>
+            <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>Aucun collaborateur actif — ajoutez des membres dans la page Administration.</p>
           ) : (
             <>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 14 }}>
@@ -171,15 +171,15 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
 
               {myProjects.length === 0 ? (
                 <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>
-                  {employee ? `${fullName(employee)} n'est assigné(e) à aucun projet` : "Sélectionnez un collaborateur"} — allez dans la page
-                  Équipe pour assigner des projets.
+                  {employee ? `${fullName(employee)} n'est assigné(e) à aucune équipe` : "Sélectionnez un collaborateur"} — allez dans la page
+                  Administration pour l'assigner à une équipe.
                 </p>
               ) : (
                 <>
                   <table style={{ borderCollapse: "collapse", fontSize: 13, marginBottom: 12 }}>
                     <thead>
                       <tr>
-                        <th style={{ ...headStyle, textAlign: "left" }}>Projet</th>
+                        <th style={{ ...headStyle, textAlign: "left" }}>Équipe</th>
                         {days.map((d) => (
                           <th key={d} style={headStyle}>
                             {weekdayLetter(d)} {formatDateShort(d)}
@@ -252,11 +252,11 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
 
         {recapParProjet.size > 0 && (
           <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
-            <h2 className="panel-title">Récapitulatif par projet (JH cumulés)</h2>
+            <h2 className="panel-title">Récapitulatif par équipe (JH cumulés)</h2>
             <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr>
-                  <th style={{ ...headStyle, textAlign: "left" }}>Projet</th>
+                  <th style={{ ...headStyle, textAlign: "left" }}>Équipe</th>
                   {employees.map((e) => (
                     <th key={e.id} style={headStyle}>
                       {fullName(e)}
@@ -297,7 +297,7 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
                 <thead>
                   <tr>
                     <th style={{ ...headStyle, textAlign: "left" }}>Date</th>
-                    <th style={{ ...headStyle, textAlign: "left" }}>Projet</th>
+                    <th style={{ ...headStyle, textAlign: "left" }}>Équipe</th>
                     <th style={headStyle}>JH</th>
                     <th style={headStyle}></th>
                   </tr>

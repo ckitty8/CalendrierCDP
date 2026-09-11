@@ -123,7 +123,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
   }
 
   function removeProject(project: Project) {
-    if (!confirm(`Supprimer le projet "${project.nom}" ? Il sera retiré des collaborateurs assignés.`)) return;
+    if (!confirm(`Supprimer l'équipe "${project.nom}" ? Elle sera retirée des collaborateurs assignés.`)) return;
     const nextProjects = draftProjects.filter((p) => p.id !== project.id);
     const nextEmployees = draftEmployees.map((e) => ({ ...e, projectIds: e.projectIds.filter((id) => id !== project.id) }));
     setDraftProjects(nextProjects);
@@ -148,7 +148,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Administration</h1>
           <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
-            Créez un projet, puis gérez ses membres dans l'onglet qui lui correspond.
+            Créez une équipe, puis gérez ses membres dans l'onglet qui lui correspond.
           </p>
         </div>
         <button className={dirty ? "btn-primary" : "btn-ghost"} onClick={saveAll} disabled={!dirty}>
@@ -157,7 +157,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
       </header>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
-        {[{ key: "projets", label: `Projets${draftProjects.length > 0 ? ` (${draftProjects.length})` : ""}` }, ...draftProjects.map((p) => ({
+        {[{ key: "projets", label: `Équipes${draftProjects.length > 0 ? ` (${draftProjects.length})` : ""}` }, ...draftProjects.map((p) => ({
           key: p.id,
           label: `${p.nom} (${draftEmployees.filter((e) => e.projectIds.includes(p.id)).length})`,
         }))].map((t) => {
@@ -188,11 +188,11 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
       {tab === "projets" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1200 }}>
           <div className="panel">
-            <h2 className="panel-title">Ajouter un projet</h2>
+            <h2 className="panel-title">Ajouter une équipe</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
-                Nom du projet
-                <input className="input" value={projectNom} onChange={(e) => setProjectNom(e.target.value)} placeholder="Refonte site web" />
+                Nom de l'équipe
+                <input className="input" value={projectNom} onChange={(e) => setProjectNom(e.target.value)} placeholder="Équipe Front" />
               </label>
               <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
                 Méthode
@@ -219,7 +219,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
 
             {draftProjects.length === 0 ? (
               <p style={{ margin: "14px 0 0", fontSize: 13, color: "#94a3b8" }}>
-                Aucun projet pour le moment — créez-en un pour faire apparaître son onglet de membres.
+                Aucune équipe pour le moment — créez-en une pour faire apparaître son onglet de membres.
               </p>
             ) : (
               <ul style={{ listStyle: "none", margin: "14px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -372,7 +372,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                       </td>
                       <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>
                         <button className="btn-ghost" onClick={() => removeEmployeeFromProject(emp, currentProject.id)}>
-                          Retirer du projet
+                          Retirer de l'équipe
                         </button>
                         <button className="btn-ghost" style={{ marginLeft: 6 }} onClick={() => removeEmployeeCompletely(emp)}>
                           Supprimer définitivement

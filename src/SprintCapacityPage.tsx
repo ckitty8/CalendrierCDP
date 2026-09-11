@@ -295,7 +295,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
             <h2 className="panel-title">Jours de travail par sprint</h2>
             <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
               Seuls les rôles "Développeur" et "Développeur stagiaire" comptent dans la capacité (le Responsable/PO n'est
-              pas décompté), et seulement s'ils sont sur un projet où la case "Capacité de sprint" est cochée (page
+              pas décompté), et seulement s'ils sont sur une équipe où la case "Capacité de sprint" est cochée (page
               Administration).
             </p>
             <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
@@ -690,7 +690,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
           <div className="panel">
             <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>
               {employees.length === 0
-                ? "Aucun collaborateur actif avec le rôle Développeur/Développeur stagiaire sur un projet avec \"Capacité de sprint\" coché — vérifiez la page Administration."
+                ? "Aucun collaborateur actif avec le rôle Développeur/Développeur stagiaire sur une équipe avec \"Capacité de sprint\" coché — vérifiez la page Administration."
                 : "Ajoutez au moins un sprint (dates de début et de fin) pour voir les calculs de capacité."}
             </p>
           </div>
