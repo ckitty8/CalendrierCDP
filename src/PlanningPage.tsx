@@ -195,6 +195,34 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
 
   return (
     <div>
+      {state.projects.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, borderBottom: "1px solid #e2e8f0" }}>
+          {state.projects.map((p) => {
+            const active = p.id === projectFilter;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setProjectFilter(p.id)}
+                style={{
+                  padding: "10px 18px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  border: "none",
+                  borderBottom: active ? "2px solid #2569f5" : "2px solid transparent",
+                  background: "none",
+                  color: active ? "#2569f5" : "#64748b",
+                  cursor: "pointer",
+                  marginBottom: -1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {p.nom}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <header
         style={{
           display: "flex",
@@ -235,33 +263,6 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
           </p>
         </div>
       ) : (
-      <>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
-        {state.projects.map((p) => {
-          const active = p.id === projectFilter;
-          return (
-            <button
-              key={p.id}
-              onClick={() => setProjectFilter(p.id)}
-              style={{
-                padding: "10px 18px",
-                fontSize: 14,
-                fontWeight: 600,
-                border: "none",
-                borderBottom: active ? "2px solid #2569f5" : "2px solid transparent",
-                background: "none",
-                color: active ? "#2569f5" : "#64748b",
-                cursor: "pointer",
-                marginBottom: -1,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {p.nom}
-            </button>
-          );
-        })}
-      </div>
-
       <div className="layout-grid">
         <aside className="planning-sidebar" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="panel">
@@ -548,7 +549,6 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
           </div>
         </main>
       </div>
-      </>
       )}
     </div>
   );
