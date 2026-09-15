@@ -15,12 +15,12 @@ import { exportMonthToExcel } from "./exportExcel";
 import CongesPage from "./CongesPage";
 
 const CATEGORY_META: { key: DayCategory; label: string; color: string }[] = [
-  { key: "normal", label: "Présence", color: "#ffffff" },
-  { key: "ferie", label: "Jour férié", color: "#c65911" },
-  { key: "fermeture", label: "Fermeture", color: "#806000" },
-  { key: "absent_projet", label: "Absent (hors équipe)", color: "#7b7b7b" },
-  { key: "conge_previsionnel", label: "Congé prévisionnel", color: "#ffc000" },
-  { key: "conge_valide", label: "Congé validé", color: "#a9d08e" },
+  { key: "normal", label: "Présence", color: "var(--card)" },
+  { key: "ferie", label: "Jour férié", color: "var(--ferie)" },
+  { key: "fermeture", label: "Fermeture", color: "var(--fermeture)" },
+  { key: "absent_projet", label: "Absent (hors équipe)", color: "var(--absent-projet)" },
+  { key: "conge_previsionnel", label: "Congé prévisionnel", color: "var(--conge-prev)" },
+  { key: "conge_valide", label: "Congé validé", color: "var(--conge-valide)" },
 ];
 
 const CATEGORY_COLOR: Record<DayCategory, string> = Object.fromEntries(
@@ -196,7 +196,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
   return (
     <div>
       {state.projects.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, borderBottom: "1px solid #e2e8f0" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20, borderBottom: "1px solid var(--border)" }}>
           {state.projects.map((p) => {
             const active = p.id === projectFilter;
             return (
@@ -208,9 +208,9 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                   fontSize: 14,
                   fontWeight: 600,
                   border: "none",
-                  borderBottom: active ? "2px solid #2569f5" : "2px solid transparent",
+                  borderBottom: active ? "2px solid var(--primary)" : "2px solid transparent",
                   background: "none",
-                  color: active ? "#2569f5" : "#64748b",
+                  color: active ? "var(--foreground)" : "var(--muted-foreground)",
                   cursor: "pointer",
                   marginBottom: -1,
                   whiteSpace: "nowrap",
@@ -238,7 +238,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             Planning {state.year}
             {projectFilter && ` — ${state.projects.find((p) => p.id === projectFilter)?.nom ?? ""}`}
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
+          <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: 13 }}>
             Clic : sélection simple · Ctrl/Cmd+clic : ajouter/retirer · Maj+clic : sélection rectangulaire
           </p>
         </div>
@@ -258,7 +258,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
 
       {state.projects.length === 0 ? (
         <div className="panel">
-          <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--muted-foreground)" }}>
             Aucune équipe pour le moment — créez-en une dans la page Administration pour afficher son planning.
           </p>
         </div>
@@ -277,7 +277,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             <button className="btn-secondary" style={{ width: "100%", marginBottom: 10 }} onClick={fillMonthPresence}>
               Remplir {MONTH_LABELS[month - 1]} en Présence
             </button>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--muted-foreground)" }}>
               <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
               Afficher les collaborateurs inactifs
             </label>
@@ -294,7 +294,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                       height: 14,
                       borderRadius: 3,
                       background: c.color,
-                      border: "1px solid #d0d5dd",
+                      border: "1px solid var(--border)",
                       display: "inline-block",
                       flexShrink: 0,
                     }}
@@ -325,7 +325,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             {showHolidays && (
               <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
                 {holidays.map((h) => (
-                  <li key={h.date} style={{ fontSize: 12.5, color: "#475569", display: "flex", justifyContent: "space-between" }}>
+                  <li key={h.date} style={{ fontSize: 12.5, color: "var(--muted-foreground)", display: "flex", justifyContent: "space-between" }}>
                     <span>{h.label}</span>
                     <span style={{ textTransform: "capitalize" }}>
                       {new Date(h.date + "T00:00:00Z").toLocaleDateString("fr-FR", {
@@ -345,14 +345,11 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             <div
               style={{
-                background: "#0f172a",
-                color: "#fff",
+                borderBottom: "1px solid var(--border)",
                 padding: "14px 18px",
               }}
             >
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                📅 Planning
-              </h2>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Planning</h2>
             </div>
             <div style={{ padding: 16 }}>
           <div
@@ -376,11 +373,11 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                     style={{
                       padding: "6px 10px",
                       fontSize: 13,
-                      fontWeight: active ? 700 : 500,
-                      borderRadius: 6,
-                      border: active ? "1px solid #2569f5" : "1px solid #e2e8f0",
-                      background: active ? "#2569f5" : "#fff",
-                      color: active ? "#fff" : "#334155",
+                      fontWeight: 500,
+                      borderRadius: "var(--radius)",
+                      border: active ? "1px solid var(--primary)" : "1px solid var(--input)",
+                      background: active ? "var(--primary)" : "var(--card)",
+                      color: active ? "var(--primary-foreground)" : "var(--foreground)",
                       cursor: "pointer",
                     }}
                   >
@@ -391,7 +388,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             </div>
 
             <div className="panel" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, padding: "8px 12px" }}>
-              <span style={{ fontSize: 13, color: "#475569" }}>
+              <span style={{ fontSize: 13, color: "var(--muted-foreground)" }}>
                 {selectedCount === 0
                   ? "Aucune cellule sélectionnée"
                   : `${selectedCount} cellule${selectedCount > 1 ? "s" : ""} sélectionnée${selectedCount > 1 ? "s" : ""}`}
@@ -407,7 +404,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                     height: 22,
                     borderRadius: 4,
                     background: c.color,
-                    border: "1px solid #94a3b8",
+                    border: "1px solid var(--border)",
                     cursor: selectedCount === 0 ? "default" : "pointer",
                     opacity: selectedCount === 0 ? 0.4 : 1,
                   }}
@@ -436,7 +433,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             </div>
           </div>
 
-          <div style={{ overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", maxHeight: "70vh", paddingBottom: 20 }}>
+          <div style={{ overflow: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius)", background: "var(--card)", maxHeight: "70vh", paddingBottom: 20 }}>
             <table style={{ borderCollapse: "collapse", fontSize: 12.5 }}>
               <thead>
                 <tr>
@@ -452,7 +449,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                       key={i}
                       colSpan={g.span}
                       className="sticky-row"
-                      style={{ top: 0, padding: "3px 2px", fontSize: 11, fontWeight: 700, color: "#475569", background: "#eef2ff" }}
+                      style={{ top: 0, padding: "3px 2px", fontSize: 11, fontWeight: 600, color: "var(--muted-foreground)", background: "var(--muted)" }}
                     >
                       Sem {g.week}
                     </th>
@@ -467,10 +464,16 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                       <th
                         key={day}
                         className="sticky-row"
-                        style={{ minWidth: 30, padding: "4px 2px", top: 24, background: weekend ? "#f1f5f9" : holiday ? "#fdf2e9" : "#fff" }}
+                        style={{
+                          minWidth: 30,
+                          padding: "4px 2px",
+                          top: 24,
+                          background: weekend ? "var(--muted)" : "var(--card)",
+                          color: holiday ? "var(--ferie)" : undefined,
+                        }}
                       >
-                        <div style={{ fontWeight: 700 }}>{day}</div>
-                        <div style={{ fontWeight: 400, color: "#94a3b8" }}>{weekdayLetter(date)}</div>
+                        <div style={{ fontWeight: 600, fontFamily: "var(--font-mono)" }}>{day}</div>
+                        <div style={{ fontWeight: 400, color: holiday ? "var(--ferie)" : "var(--muted-foreground)" }}>{weekdayLetter(date)}</div>
                       </th>
                     );
                   })}
@@ -494,7 +497,7 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                             : ({ employeeId: emp.id, date, category: "normal", value: 1 } as DayEntry)
                           : undefined);
                       const selected = selection.has(key);
-                      const bg = weekend ? "#f1f5f9" : entry ? CATEGORY_COLOR[entry.category] : "#fff";
+                      const bg = weekend ? "var(--muted)" : entry ? CATEGORY_COLOR[entry.category] : "var(--card)";
                       return (
                         <td
                           key={day}
@@ -504,9 +507,10 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                             padding: "6px 2px",
                             background: bg,
                             cursor: "pointer",
-                            outline: selected ? "2px solid #2569f5" : "1px solid #f1f5f9",
+                            outline: selected ? "2px solid var(--ring)" : "1px solid var(--border)",
                             outlineOffset: -1,
                             userSelect: "none",
+                            fontFamily: "var(--font-mono)",
                           }}
                         >
                           {entry ? entry.value : ""}
@@ -525,9 +529,10 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
             <button
               onClick={() => setShowConges((s) => !s)}
               style={{
-                background: "#1e3a8a",
-                color: "#fff",
+                background: "none",
+                color: "var(--foreground)",
                 border: "none",
+                borderBottom: "1px solid var(--border)",
                 padding: "14px 18px",
                 cursor: "pointer",
                 display: "flex",
@@ -536,10 +541,8 @@ export default function PlanningPage({ state, setState }: PlanningPageProps) {
                 width: "100%",
               }}
             >
-              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                📋 Résumé des congés
-              </h2>
-              <span style={{ fontSize: 18, lineHeight: 1 }}>{showConges ? "−" : "+"}</span>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Résumé des congés</h2>
+              <span style={{ fontSize: 18, lineHeight: 1, color: "var(--muted-foreground)" }}>{showConges ? "−" : "+"}</span>
             </button>
             {showConges && (
               <div style={{ padding: 16 }}>

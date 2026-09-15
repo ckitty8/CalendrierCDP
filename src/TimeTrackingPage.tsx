@@ -123,14 +123,14 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
     [state.timeEntries, employeeId]
   );
 
-  const cellStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center", borderBottom: "1px solid #f1f5f9" };
-  const headStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center", borderBottom: "1px solid #e2e8f0", color: "#64748b", fontSize: 12, whiteSpace: "nowrap" };
+  const cellStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center", borderBottom: "1px solid var(--border)" };
+  const headStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center", borderBottom: "1px solid var(--border)", color: "var(--muted-foreground)", fontSize: 12, whiteSpace: "nowrap" };
 
   return (
     <div>
       <header style={{ marginBottom: 16 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Temps par équipe</h1>
-        <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
+        <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: 13 }}>
           Chaque collaborateur saisit ici le temps (en JH) passé sur chacune de ses équipes, semaine par semaine.
         </p>
       </header>
@@ -139,11 +139,11 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
         <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
           <h2 className="panel-title">Saisir mes temps</h2>
           {employees.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>Aucun collaborateur actif — ajoutez des membres dans la page Administration.</p>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--muted-foreground)" }}>Aucun collaborateur actif — ajoutez des membres dans la page Administration.</p>
           ) : (
             <>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 14 }}>
-                <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted-foreground)" }}>
                   Collaborateur
                   <select className="input" value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
                     {employees.map((e) => (
@@ -170,7 +170,7 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
               </div>
 
               {myProjects.length === 0 ? (
-                <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>
+                <p style={{ margin: 0, fontSize: 13, color: "var(--muted-foreground)" }}>
                   {employee ? `${fullName(employee)} n'est assigné(e) à aucune équipe` : "Sélectionnez un collaborateur"} — allez dans la page
                   Administration pour l'assigner à une équipe.
                 </p>
@@ -185,13 +185,13 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
                             {weekdayLetter(d)} {formatDateShort(d)}
                           </th>
                         ))}
-                        <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Total</th>
+                        <th style={{ ...headStyle, fontWeight: 700, color: "var(--foreground)", background: "var(--muted)" }}>Total</th>
                       </tr>
                     </thead>
                     <tbody>
                       {myProjects.map((p) => (
                         <tr key={p.id}>
-                          <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", fontWeight: 600, whiteSpace: "nowrap" }}>{p.nom}</td>
+                          <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)", fontWeight: 600, whiteSpace: "nowrap" }}>{p.nom}</td>
                           {days.map((d) => (
                             <td key={d} style={{ ...cellStyle, padding: "4px 6px" }}>
                               <input
@@ -208,15 +208,15 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
                               />
                             </td>
                           ))}
-                          <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc" }}>{fmt(totalProjetSaisi(p.id))}</td>
+                          <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)" }}>{fmt(totalProjetSaisi(p.id))}</td>
                         </tr>
                       ))}
                       <tr>
-                        <td style={{ padding: "6px 8px", fontWeight: 700, color: "#64748b" }}>Planning (repère)</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 700, color: "var(--muted-foreground)" }}>Planning (repère)</td>
                         {days.map((d) => {
                           const v = dayIndex.get(`${employeeId}|${d}`)?.value;
                           return (
-                            <td key={d} style={{ ...cellStyle, color: "#94a3b8" }}>
+                            <td key={d} style={{ ...cellStyle, color: "var(--muted-foreground)" }}>
                               {v === undefined ? "—" : fmt(v)}
                             </td>
                           );
@@ -230,12 +230,12 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
                           const planning = dayIndex.get(`${employeeId}|${d}`)?.value;
                           const mismatch = planning !== undefined && total !== planning;
                           return (
-                            <td key={d} style={{ ...cellStyle, fontWeight: 700, color: mismatch ? "#b45309" : "#334155" }}>
+                            <td key={d} style={{ ...cellStyle, fontWeight: 700, color: mismatch ? "#b45309" : "var(--foreground)" }}>
                               {fmt(total)}
                             </td>
                           );
                         })}
-                        <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
+                        <td style={{ ...cellStyle, fontWeight: 700, background: "var(--secondary)" }}>
                           {fmt(days.reduce((s, d) => s + totalJourSaisi(d), 0))}
                         </td>
                       </tr>
@@ -262,7 +262,7 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
                       {fullName(e)}
                     </th>
                   ))}
-                  <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Total</th>
+                  <th style={{ ...headStyle, fontWeight: 700, color: "var(--foreground)", background: "var(--muted)" }}>Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -272,13 +272,13 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
                   const total = [...parEmp.values()].reduce((s, v) => s + v, 0);
                   return (
                     <tr key={p.id}>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", fontWeight: 600, whiteSpace: "nowrap" }}>{p.nom}</td>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)", fontWeight: 600, whiteSpace: "nowrap" }}>{p.nom}</td>
                       {employees.map((e) => (
                         <td key={e.id} style={cellStyle}>
                           {fmt(parEmp.get(e.id) ?? 0)}
                         </td>
                       ))}
-                      <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc" }}>{fmt(total)}</td>
+                      <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)" }}>{fmt(total)}</td>
                     </tr>
                   );
                 })}
@@ -291,7 +291,7 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
           <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
             <h2 className="panel-title">Historique — {fullName(employee)}</h2>
             {historique.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>Aucune saisie pour le moment.</p>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--muted-foreground)" }}>Aucune saisie pour le moment.</p>
             ) : (
               <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
                 <thead>
@@ -305,8 +305,8 @@ export default function TimeTrackingPage({ state, setState }: TimeTrackingPagePr
                 <tbody>
                   {historique.map((t) => (
                     <tr key={t.id}>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{formatDateFR(t.date)}</td>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{formatDateFR(t.date)}</td>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)" }}>
                         {state.projects.find((p) => p.id === t.projectId)?.nom ?? "?"}
                       </td>
                       <td style={cellStyle}>{fmt(t.heures)}</td>

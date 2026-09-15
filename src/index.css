@@ -4,13 +4,42 @@
 
 :root {
   color-scheme: light;
+
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --radius: 0.5rem;
+
+  --background: oklch(0.984 0.003 247.858);
+  --foreground: oklch(0.129 0.042 264.695);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.129 0.042 264.695);
+  --primary: oklch(0.208 0.042 265.755);
+  --primary-foreground: oklch(0.984 0.003 247.858);
+  --secondary: oklch(0.968 0.007 247.896);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.554 0.046 257.417);
+  --accent: oklch(0.968 0.007 247.896);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(0.929 0.013 255.508);
+  --input: oklch(0.929 0.013 255.508);
+  --ring: oklch(0.704 0.04 256.788);
+
+  /* Catégories du planning — reprises du design DSI (dsi-leave-buddy) */
+  --conge-valide: oklch(0.72 0.16 145);
+  --conge-prev: oklch(0.85 0.13 95);
+  --absent-projet: oklch(0.72 0.09 250);
+  --ferie: oklch(0.72 0.17 25);
+  --fermeture: oklch(0.6 0.11 320);
 }
 
 body {
   margin: 0;
-  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  background: #f6f7fb;
-  color: #1a1d29;
+  font-family: var(--font-sans);
+  background: var(--background);
+  color: var(--foreground);
   overflow-x: hidden;
 }
 
@@ -48,48 +77,52 @@ body {
 }
 
 .btn-primary {
-  background: #2569f5;
-  color: #fff;
+  background: var(--primary);
+  color: var(--primary-foreground);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius);
   padding: 9px 14px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
+  transition: opacity 0.15s;
 }
 .btn-primary:hover:not(:disabled) {
-  background: #1b52c9;
+  opacity: 0.9;
 }
 .btn-primary:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: default;
 }
 
 .btn-secondary {
-  background: #eef2ff;
-  color: #2569f5;
-  border: 1px solid #c7d2fe;
-  border-radius: 6px;
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   padding: 8px 12px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
+  transition: background 0.15s;
 }
 .btn-secondary:hover {
-  background: #e0e7ff;
+  background: var(--accent);
 }
 
 .btn-ghost {
-  background: #fff;
-  color: #334155;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
   padding: 6px 10px;
   font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: background 0.15s;
 }
 .btn-ghost:hover:not(:disabled) {
-  background: #f8fafc;
+  background: var(--accent);
 }
 .btn-ghost:disabled {
   opacity: 0.4;
@@ -97,28 +130,31 @@ body {
 }
 
 .panel {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  padding: 16px;
 }
 
 .panel-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #334155;
-  margin: 0 0 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--card-foreground);
+  margin: 0 0 12px;
 }
 
 .input {
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
   padding: 6px 8px;
   font-size: 13px;
-  background: #fff;
-  color: #1a1d29;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: inherit;
+}
+.input:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
 }
 
 table {
@@ -126,22 +162,22 @@ table {
 }
 th,
 td {
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border);
 }
 
 .sticky-col {
   position: sticky;
   left: 0;
-  background: #fff;
+  background: var(--card);
   z-index: 2;
-  border-right: 1px solid #e2e8f0;
+  border-right: 1px solid var(--border);
 }
 .sticky-row {
   position: sticky;
   top: 0;
-  background: #fff;
+  background: var(--card);
   z-index: 1;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
 }
 thead th.sticky-col.sticky-row {
   z-index: 3;

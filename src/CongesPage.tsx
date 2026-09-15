@@ -82,14 +82,14 @@ export default function CongesPage({ state, setState, embedded, projectId }: Con
     );
   }, [table]);
 
-  const cellStyle: React.CSSProperties = { padding: "5px 6px", textAlign: "center", borderBottom: "1px solid #f1f5f9" };
+  const cellStyle: React.CSSProperties = { padding: "5px 6px", textAlign: "center", borderBottom: "1px solid var(--border)" };
 
   return (
     <div>
       {!embedded && (
         <header style={{ marginBottom: 16 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Jours de congés</h1>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
+          <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: 13 }}>
             Calculé automatiquement à partir du Planning, avec les mêmes formules que le fichier Excel d'origine : "Trav."
             compte les cellules à 1 (+ 0,5 pour les demi-journées) et "Cong." compte les cellules à 0 (+ 0,5 pour les
             demi-journées) — jours fériés et fermetures inclus, comme dans le fichier. Les jours non saisis ne comptent nulle
@@ -102,11 +102,11 @@ export default function CongesPage({ state, setState, embedded, projectId }: Con
       )}
 
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 20, marginBottom: 12 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--muted-foreground)" }}>
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
           Afficher les collaborateurs inactifs
         </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#475569" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--muted-foreground)" }}>
           Objectif de jours travaillés / an (imposé par le client)
           <input
             className="input"
@@ -122,7 +122,7 @@ export default function CongesPage({ state, setState, embedded, projectId }: Con
         </label>
       </div>
 
-      <div style={{ overflow: "auto", border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", maxHeight: "75vh", paddingBottom: 20 }}>
+      <div style={{ overflow: "auto", border: "1px solid var(--border)", borderRadius: 8, background: "var(--card)", maxHeight: "75vh", paddingBottom: 20 }}>
         <table style={{ borderCollapse: "collapse", fontSize: 12 }}>
           <thead>
             <tr>
@@ -138,7 +138,7 @@ export default function CongesPage({ state, setState, embedded, projectId }: Con
                   key={label}
                   colSpan={2}
                   className="sticky-row"
-                  style={{ top: 0, padding: "4px 6px", fontWeight: 700, color: "#475569", background: "#eef2ff", borderLeft: "2px solid #fff" }}
+                  style={{ top: 0, padding: "4px 6px", fontWeight: 700, color: "var(--muted-foreground)", background: "var(--muted)", borderLeft: "2px solid var(--card)" }}
                 >
                   {label}
                 </th>
@@ -146,7 +146,7 @@ export default function CongesPage({ state, setState, embedded, projectId }: Con
               <th
                 colSpan={3}
                 className="sticky-row"
-                style={{ top: 0, padding: "4px 6px", fontWeight: 700, color: "#1e3a8a", background: "#dbeafe", borderLeft: "2px solid #fff" }}
+                style={{ top: 0, padding: "4px 6px", fontWeight: 700, color: "var(--foreground)", background: "var(--secondary)", borderLeft: "2px solid var(--card)" }}
               >
                 Total annuel
               </th>
@@ -154,23 +154,23 @@ export default function CongesPage({ state, setState, embedded, projectId }: Con
             <tr>
               {MONTH_LABELS.map((label) => (
                 <Fragment key={label}>
-                  <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 500, color: "#64748b", borderLeft: "2px solid #fff" }}>
+                  <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 500, color: "var(--muted-foreground)", borderLeft: "2px solid var(--card)" }}>
                     Trav.
                   </th>
-                  <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 500, color: "#64748b" }}>
+                  <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 500, color: "var(--muted-foreground)" }}>
                     Cong.
                   </th>
                 </Fragment>
               ))}
-              <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "#1e3a8a", borderLeft: "2px solid #fff", background: "#eff6ff" }}>
+              <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "var(--foreground)", borderLeft: "2px solid var(--card)", background: "var(--muted)" }}>
                 Trav.
               </th>
-              <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "#1e3a8a", background: "#eff6ff" }}>
+              <th className="sticky-row" style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "var(--foreground)", background: "var(--muted)" }}>
                 Cong.
               </th>
               <th
                 className="sticky-row"
-                style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "#1e3a8a", background: "#eff6ff" }}
+                style={{ top: 24, padding: "3px 6px", fontWeight: 600, color: "var(--foreground)", background: "var(--muted)" }}
                 title="Jours de congés qu'il reste à prendre pour que les jours travaillés égalent l'objectif imposé par le client"
               >
                 Total jour travaillé client
@@ -185,18 +185,18 @@ export default function CongesPage({ state, setState, embedded, projectId }: Con
                 </td>
                 {months.map((m, i) => (
                   <Fragment key={i}>
-                    <td style={{ ...cellStyle, borderLeft: "2px solid #f8fafc" }}>{fmt(m.travaille)}</td>
-                    <td style={{ ...cellStyle, color: m.conges > 0 ? "#b45309" : "#94a3b8" }}>{fmt(m.conges)}</td>
+                    <td style={{ ...cellStyle, borderLeft: "1px solid var(--border)" }}>{fmt(m.travaille)}</td>
+                    <td style={{ ...cellStyle, color: m.conges > 0 ? "#b45309" : "var(--muted-foreground)" }}>{fmt(m.conges)}</td>
                   </Fragment>
                 ))}
-                <td style={{ ...cellStyle, borderLeft: "2px solid #f8fafc", fontWeight: 700, background: "#f8fafc" }}>{fmt(total.travaille)}</td>
-                <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc" }}>{fmt(total.conges)}</td>
+                <td style={{ ...cellStyle, borderLeft: "1px solid var(--border)", fontWeight: 700, background: "var(--muted)" }}>{fmt(total.travaille)}</td>
+                <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)" }}>{fmt(total.conges)}</td>
                 <td
                   style={{
                     ...cellStyle,
                     fontWeight: 700,
-                    background: "#f8fafc",
-                    color: total.travaille - state.objectifJoursTravailles > 0 ? "#dc2626" : "#047857",
+                    background: "var(--muted)",
+                    color: total.travaille - state.objectifJoursTravailles > 0 ? "var(--destructive)" : "color-mix(in oklch, var(--conge-valide), black 45%)",
                   }}
                 >
                   {fmt(total.travaille - state.objectifJoursTravailles)}
@@ -209,17 +209,17 @@ export default function CongesPage({ state, setState, embedded, projectId }: Con
               </td>
               {teamTotal.map((m, i) => (
                 <Fragment key={i}>
-                  <td style={{ ...cellStyle, borderLeft: "2px solid #f8fafc", fontWeight: 700 }}>{fmt(m.travaille)}</td>
+                  <td style={{ ...cellStyle, borderLeft: "1px solid var(--border)", fontWeight: 700 }}>{fmt(m.travaille)}</td>
                   <td style={{ ...cellStyle, fontWeight: 700 }}>{fmt(m.conges)}</td>
                 </Fragment>
               ))}
-              <td style={{ ...cellStyle, borderLeft: "2px solid #f8fafc", fontWeight: 700, background: "#dbeafe" }}>
+              <td style={{ ...cellStyle, borderLeft: "1px solid var(--border)", fontWeight: 700, background: "var(--secondary)" }}>
                 {fmt(teamTotal.reduce((s, m) => s + m.travaille, 0))}
               </td>
-              <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
+              <td style={{ ...cellStyle, fontWeight: 700, background: "var(--secondary)" }}>
                 {fmt(teamTotal.reduce((s, m) => s + m.conges, 0))}
               </td>
-              <td style={{ ...cellStyle, background: "#dbeafe" }} />
+              <td style={{ ...cellStyle, background: "var(--secondary)" }} />
             </tr>
           </tbody>
         </table>

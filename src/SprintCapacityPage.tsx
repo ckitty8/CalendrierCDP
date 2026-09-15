@@ -216,15 +216,15 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
     setTimeout(() => setSavedFlash(false), 2000);
   }
 
-  const cellStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center", borderBottom: "1px solid #f1f5f9" };
-  const headStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center", borderBottom: "1px solid #e2e8f0", color: "#64748b", fontSize: 12, whiteSpace: "nowrap" };
+  const cellStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center", borderBottom: "1px solid var(--border)" };
+  const headStyle: React.CSSProperties = { padding: "6px 8px", textAlign: "center", borderBottom: "1px solid var(--border)", color: "var(--muted-foreground)", fontSize: 12, whiteSpace: "nowrap" };
 
   return (
     <div>
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Capacité de sprint</h1>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
+          <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: 13 }}>
             Définissez vos sprints (dates de début/fin) : les jours de travail par collaborateur sont calculés
             automatiquement depuis le Planning. Répartissez ensuite la capacité de l'équipe en JH par type de tâche.
           </p>
@@ -239,7 +239,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
           <h2 className="panel-title">
             Sprints ({draftSprints.length}){dirty && <span style={{ color: "#b45309", fontWeight: 600, marginLeft: 8 }}>· modifications non enregistrées</span>}
           </h2>
-          {draftSprints.length === 0 && <p style={{ margin: "0 0 10px", fontSize: 13, color: "#94a3b8" }}>Aucun sprint pour le moment.</p>}
+          {draftSprints.length === 0 && <p style={{ margin: "0 0 10px", fontSize: 13, color: "var(--muted-foreground)" }}>Aucun sprint pour le moment.</p>}
           {draftSprints.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
               {draftSprints.map((sprint) => (
@@ -250,7 +250,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                     value={sprint.nom}
                     onChange={(e) => editSprint(sprint.id, { nom: e.target.value })}
                   />
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted-foreground)" }}>
                     Début
                     <input
                       className="input"
@@ -259,7 +259,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       onChange={(e) => editSprint(sprint.id, { dateDebut: e.target.value })}
                     />
                   </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted-foreground)" }}>
                     Fin
                     <input
                       className="input"
@@ -268,7 +268,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       onChange={(e) => editSprint(sprint.id, { dateFin: e.target.value })}
                     />
                   </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted-foreground)" }}>
                     Version
                     <input
                       className="input"
@@ -293,7 +293,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
         {sprints.length > 0 && employees.length > 0 && (
           <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
             <h2 className="panel-title">Jours de travail par sprint</h2>
-            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
+            <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--muted-foreground)" }}>
               Seuls les rôles "Développeur" et "Développeur stagiaire" comptent dans la capacité (le Responsable/PO n'est
               pas décompté), et seulement s'ils sont sur une équipe où la case "Capacité de sprint" est cochée (page
               Administration).
@@ -307,7 +307,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       {sprintLabel(s)}
                     </th>
                   ))}
-                  <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Total</th>
+                  <th style={{ ...headStyle, fontWeight: 700, color: "var(--foreground)", background: "var(--muted)" }}>Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -315,7 +315,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                   const total = sprints.reduce((s, sprint) => s + (travailPar.get(`${sprint.id}|${emp.id}`) ?? 0), 0);
                   return (
                     <tr key={emp.id}>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", fontWeight: 600, whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)", fontWeight: 600, whiteSpace: "nowrap" }}>
                         {fullName(emp)}
                       </td>
                       {sprints.map((sprint) => (
@@ -323,7 +323,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                           {fmt(travailPar.get(`${sprint.id}|${emp.id}`) ?? 0)}
                         </td>
                       ))}
-                      <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc" }}>{fmt(total)}</td>
+                      <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)" }}>{fmt(total)}</td>
                     </tr>
                   );
                 })}
@@ -334,7 +334,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       {fmt(totalEquipePar.get(sprint.id) ?? 0)}
                     </td>
                   ))}
-                  <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
+                  <td style={{ ...cellStyle, fontWeight: 700, background: "var(--secondary)" }}>
                     {fmt([...totalEquipePar.values()].reduce((a, b) => a + b, 0))}
                   </td>
                 </tr>
@@ -346,7 +346,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
         {sprints.length > 0 && employees.length > 0 && (
           <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
             <h2 className="panel-title">Répartition des tâches (JH par sprint)</h2>
-            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
+            <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--muted-foreground)" }}>
               "US" (fonctionnalités) récupère automatiquement le reste des JH de l'équipe une fois les autres tâches
               affectées. Modifiez le % de chaque tâche ou ajoutez-en une nouvelle.
             </p>
@@ -360,14 +360,14 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       {sprintLabel(s)}
                     </th>
                   ))}
-                  <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Total</th>
+                  <th style={{ ...headStyle, fontWeight: 700, color: "var(--foreground)", background: "var(--muted)" }}>Total</th>
                   <th style={headStyle}></th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", fontWeight: 600 }}>US</td>
-                  <td style={{ ...cellStyle, fontWeight: 600, color: pourcentageUS < 0 ? "#dc2626" : "#334155" }}>
+                  <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)", fontWeight: 600 }}>US</td>
+                  <td style={{ ...cellStyle, fontWeight: 600, color: pourcentageUS < 0 ? "var(--destructive)" : "var(--foreground)" }}>
                     {fmtPct(pourcentageUS)}
                   </td>
                   {sprints.map((sprint) => {
@@ -378,14 +378,14 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       </td>
                     );
                   })}
-                  <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc" }}>
+                  <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)" }}>
                     {fmt(sprints.reduce((s, sprint) => s + (totalEquipePar.get(sprint.id) ?? 0) * pourcentageUS, 0))}
                   </td>
                   <td style={cellStyle}></td>
                 </tr>
                 {draftTaskTypes.map((task) => (
                   <tr key={task.id}>
-                    <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)" }}>
                       <input
                         className="input"
                         style={{ minWidth: 140 }}
@@ -415,7 +415,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                         </td>
                       );
                     })}
-                    <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc" }}>
+                    <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)" }}>
                       {fmt(sprints.reduce((s, sprint) => s + (totalEquipePar.get(sprint.id) ?? 0) * task.pourcentage, 0))}
                     </td>
                     <td style={cellStyle}>
@@ -433,7 +433,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       {fmt(totalEquipePar.get(sprint.id) ?? 0)}
                     </td>
                   ))}
-                  <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
+                  <td style={{ ...cellStyle, fontWeight: 700, background: "var(--secondary)" }}>
                     {fmt([...totalEquipePar.values()].reduce((a, b) => a + b, 0))}
                   </td>
                   <td style={cellStyle}></td>
@@ -457,7 +457,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
         {sprints.length > 0 && employees.length > 0 && (
           <div className="panel" style={{ overflowX: "auto", paddingBottom: 20 }}>
             <h2 className="panel-title">Suivi réel — Estimé vs Réel (JH)</h2>
-            <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
+            <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--muted-foreground)" }}>
               L'Estimé reprend la répartition ci-dessus. Saisissez le Réel (JH réellement passés) au fur et à mesure du
               sprint.
             </p>
@@ -471,8 +471,8 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       {sprintLabel(s)}
                     </th>
                   ))}
-                  <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Total</th>
-                  <th style={{ ...headStyle, fontWeight: 700, color: "#1e3a8a", background: "#eff6ff" }}>Écart</th>
+                  <th style={{ ...headStyle, fontWeight: 700, color: "var(--foreground)", background: "var(--muted)" }}>Total</th>
+                  <th style={{ ...headStyle, fontWeight: 700, color: "var(--foreground)", background: "var(--muted)" }}>Écart</th>
                 </tr>
               </thead>
               <tbody>
@@ -483,23 +483,23 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                   return (
                     <Fragment key={task.id}>
                       <tr>
-                        <td rowSpan={2} style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", fontWeight: 600, whiteSpace: "nowrap", verticalAlign: "top" }}>
+                        <td rowSpan={2} style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)", fontWeight: 600, whiteSpace: "nowrap", verticalAlign: "top" }}>
                           {task.nom}
                         </td>
-                        <td style={{ padding: "4px 8px", fontSize: 11, color: "#94a3b8" }}>Estimé</td>
+                        <td style={{ padding: "4px 8px", fontSize: 11, color: "var(--muted-foreground)" }}>Estimé</td>
                         {sprints.map((sprint) => (
-                          <td key={sprint.id} style={{ ...cellStyle, color: "#64748b" }}>
+                          <td key={sprint.id} style={{ ...cellStyle, color: "var(--muted-foreground)" }}>
                             {fmt(estime(sprint.id, task))}
                           </td>
                         ))}
-                        <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc" }}>{fmt(totalEstime)}</td>
-                        <td rowSpan={2} style={{ ...cellStyle, fontWeight: 700, verticalAlign: "middle", color: ecart > 0 ? "#dc2626" : ecart < 0 ? "#047857" : "#334155" }}>
+                        <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)" }}>{fmt(totalEstime)}</td>
+                        <td rowSpan={2} style={{ ...cellStyle, fontWeight: 700, verticalAlign: "middle", color: ecart > 0 ? "var(--destructive)" : ecart < 0 ? "color-mix(in oklch, var(--conge-valide), black 45%)" : "var(--foreground)" }}>
                           {ecart > 0 ? "+" : ""}
                           {fmt(ecart)}
                         </td>
                       </tr>
                       <tr>
-                        <td style={{ padding: "4px 8px", fontSize: 11, color: "#94a3b8", borderBottom: "1px solid #f1f5f9" }}>Réel</td>
+                        <td style={{ padding: "4px 8px", fontSize: 11, color: "var(--muted-foreground)", borderBottom: "1px solid var(--border)" }}>Réel</td>
                         {sprints.map((sprint) => (
                           <td key={sprint.id} style={{ ...cellStyle, padding: "4px 8px" }}>
                             <input
@@ -515,24 +515,24 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                             />
                           </td>
                         ))}
-                        <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc", borderBottom: "1px solid #f1f5f9" }}>{fmt(totalReel)}</td>
+                        <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)", borderBottom: "1px solid var(--border)" }}>{fmt(totalReel)}</td>
                       </tr>
                     </Fragment>
                   );
                 })}
                 <tr>
-                  <td colSpan={2} style={{ padding: "6px 8px", fontWeight: 700, color: "#64748b" }}>
+                  <td colSpan={2} style={{ padding: "6px 8px", fontWeight: 700, color: "var(--muted-foreground)" }}>
                     TT tous sauf US (Réel)
                   </td>
                   {sprints.map((sprint) => {
                     const totalReelHorsUS = draftTaskTypes.reduce((s, t) => s + (draftReelJH[reelKey(sprint.id, t.id)] ?? 0), 0);
                     return (
-                      <td key={sprint.id} style={{ ...cellStyle, fontWeight: 700, color: "#64748b" }}>
+                      <td key={sprint.id} style={{ ...cellStyle, fontWeight: 700, color: "var(--muted-foreground)" }}>
                         {fmt(totalReelHorsUS)}
                       </td>
                     );
                   })}
-                  <td style={{ ...cellStyle, fontWeight: 700, background: "#f8fafc", color: "#64748b" }}>
+                  <td style={{ ...cellStyle, fontWeight: 700, background: "var(--muted)", color: "var(--muted-foreground)" }}>
                     {fmt(
                       sprints.reduce(
                         (s, sprint) => s + draftTaskTypes.reduce((s2, t) => s2 + (draftReelJH[reelKey(sprint.id, t.id)] ?? 0), 0),
@@ -554,7 +554,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                       </td>
                     );
                   })}
-                  <td style={{ ...cellStyle, fontWeight: 700, background: "#dbeafe" }}>
+                  <td style={{ ...cellStyle, fontWeight: 700, background: "var(--secondary)" }}>
                     {fmt(
                       sprints.reduce(
                         (s, sprint) => s + allTasks.reduce((s2, t) => s2 + (draftReelJH[reelKey(sprint.id, t.id)] ?? 0), 0),
@@ -573,11 +573,11 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
           <h2 className="panel-title">
             Hotfix ({draftHotfixes.length}){dirty && <span style={{ color: "#b45309", fontWeight: 600, marginLeft: 8 }}>· modifications non enregistrées</span>}
           </h2>
-          <p style={{ margin: "0 0 10px", fontSize: 12, color: "#94a3b8" }}>
+          <p style={{ margin: "0 0 10px", fontSize: 12, color: "var(--muted-foreground)" }}>
             Suivez les correctifs urgents déployés en dehors du cycle normal, en les rattachant si besoin à un sprint/version.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end", marginBottom: 12 }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted-foreground)" }}>
               Titre du hotfix
               <input
                 className="input"
@@ -587,7 +587,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                 placeholder="Correctif erreur 500 sur export"
               />
             </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted-foreground)" }}>
               Version
               <input
                 className="input"
@@ -603,7 +603,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
           </div>
 
           {draftHotfixes.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>Aucun hotfix pour le moment.</p>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--muted-foreground)" }}>Aucun hotfix pour le moment.</p>
           ) : (
             <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
@@ -619,7 +619,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
               <tbody>
                 {draftHotfixes.map((h) => (
                   <tr key={h.id}>
-                    <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                    <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)" }}>
                       <input
                         className="input"
                         style={{ minWidth: 200 }}
@@ -667,8 +667,14 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
                           fontWeight: 600,
                           border: "none",
                           cursor: "pointer",
-                          background: h.statut === "deploye" ? "#ecfdf5" : "#fff7ed",
-                          color: h.statut === "deploye" ? "#047857" : "#c2410c",
+                          background:
+                            h.statut === "deploye"
+                              ? "color-mix(in oklch, var(--conge-valide), white 85%)"
+                              : "color-mix(in oklch, var(--ferie), white 88%)",
+                          color:
+                            h.statut === "deploye"
+                              ? "color-mix(in oklch, var(--conge-valide), black 45%)"
+                              : "color-mix(in oklch, var(--ferie), black 25%)",
                         }}
                       >
                         {h.statut === "deploye" ? "Déployé" : "Ouvert"}
@@ -688,7 +694,7 @@ export default function SprintCapacityPage({ state, setState }: SprintCapacityPa
 
         {(sprints.length === 0 || employees.length === 0) && (
           <div className="panel">
-            <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>
+            <p style={{ margin: 0, fontSize: 13, color: "var(--muted-foreground)" }}>
               {employees.length === 0
                 ? "Aucun collaborateur actif avec le rôle Développeur/Développeur stagiaire sur une équipe avec \"Capacité de sprint\" coché — vérifiez la page Administration."
                 : "Ajoutez au moins un sprint (dates de début et de fin) pour voir les calculs de capacité."}

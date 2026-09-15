@@ -147,7 +147,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
       <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Administration</h1>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 13 }}>
+          <p style={{ margin: "4px 0 0", color: "var(--muted-foreground)", fontSize: 13 }}>
             Créez une équipe, puis gérez ses membres dans l'onglet qui lui correspond.
           </p>
         </div>
@@ -156,7 +156,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
         </button>
       </header>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16, borderBottom: "1px solid var(--border)" }}>
         {[{ key: "projets", label: `Équipes${draftProjects.length > 0 ? ` (${draftProjects.length})` : ""}` }, ...draftProjects.map((p) => ({
           key: p.id,
           label: `${p.nom} (${draftEmployees.filter((e) => e.projectIds.includes(p.id)).length})`,
@@ -171,9 +171,9 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                 fontSize: 14,
                 fontWeight: 600,
                 border: "none",
-                borderBottom: active ? "2px solid #2569f5" : "2px solid transparent",
+                borderBottom: active ? "2px solid var(--primary)" : "2px solid transparent",
                 background: "none",
-                color: active ? "#2569f5" : "#64748b",
+                color: active ? "var(--foreground)" : "var(--muted-foreground)",
                 cursor: "pointer",
                 marginBottom: -1,
                 whiteSpace: "nowrap",
@@ -190,11 +190,11 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
           <div className="panel">
             <h2 className="panel-title">Ajouter une équipe</h2>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted-foreground)" }}>
                 Nom de l'équipe
                 <input className="input" value={projectNom} onChange={(e) => setProjectNom(e.target.value)} placeholder="Équipe Front" />
               </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted-foreground)" }}>
                 Méthode
                 <select className="input" value={projectMethode} onChange={(e) => setProjectMethode(e.target.value as Project["methode"])}>
                   {METHODES.map((m) => (
@@ -204,7 +204,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                   ))}
                 </select>
               </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#475569", paddingBottom: 8 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--muted-foreground)", paddingBottom: 8 }}>
                 <input
                   type="checkbox"
                   checked={projectCapaciteSprint}
@@ -218,7 +218,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
             </div>
 
             {draftProjects.length === 0 ? (
-              <p style={{ margin: "14px 0 0", fontSize: 13, color: "#94a3b8" }}>
+              <p style={{ margin: "14px 0 0", fontSize: 13, color: "var(--muted-foreground)" }}>
                 Aucune équipe pour le moment — créez-en une pour faire apparaître son onglet de membres.
               </p>
             ) : (
@@ -242,7 +242,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                         </option>
                       ))}
                     </select>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#475569" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--muted-foreground)" }}>
                       <input
                         type="checkbox"
                         checked={project.capaciteSprint}
@@ -267,17 +267,24 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
       {currentProject && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 1200 }}>
           <div className="panel">
-            <h2 className="panel-title">Ajouter un membre à "{currentProject.nom}"</h2>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+              <h2 className="panel-title" style={{ marginBottom: 0 }}>
+                Ajouter un membre à "{currentProject.nom}"
+              </h2>
+              <button className="btn-ghost" onClick={() => removeProject(currentProject)}>
+                Supprimer l'équipe
+              </button>
+            </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end" }}>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted-foreground)" }}>
                 Nom
                 <input className="input" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="LABBE" />
               </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted-foreground)" }}>
                 Prénom
                 <input className="input" value={prenom} onChange={(e) => setPrenom(e.target.value)} placeholder="Christelle" />
               </label>
-              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "#475569" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 12, color: "var(--muted-foreground)" }}>
                 Rôle
                 <select className="input" value={role} onChange={(e) => setRole(e.target.value)}>
                   {ROLES.map((r) => (
@@ -298,9 +305,9 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
               <h2 className="panel-title">Prochains anniversaires</h2>
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                 {upcomingBirthdays.map(({ emp, days }) => (
-                  <li key={emp.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#334155" }}>
+                  <li key={emp.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--foreground)" }}>
                     <span>{fullName(emp)}</span>
-                    <span style={{ color: "#64748b" }}>
+                    <span style={{ color: "var(--muted-foreground)" }}>
                       {formatBirthday(emp.birthday!)} · {days === 0 ? "aujourd'hui !" : `dans ${days} j`}
                     </span>
                   </li>
@@ -314,13 +321,13 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
               Membres ({projectMembers.length}){dirty && <span style={{ color: "#b45309", fontWeight: 600, marginLeft: 8 }}>· modifications non enregistrées</span>}
             </h2>
             {projectMembers.length === 0 ? (
-              <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>Aucun membre pour le moment — ajoutez-en un ci-dessus.</p>
+              <p style={{ margin: 0, fontSize: 13, color: "var(--muted-foreground)" }}>Aucun membre pour le moment — ajoutez-en un ci-dessus.</p>
             ) : (
               <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 13 }}>
                 <thead>
                   <tr>
                     {["Nom", "Prénom", "Rôle", "Anniversaire", "Actif", ""].map((h) => (
-                      <th key={h} style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #e2e8f0", color: "#64748b", fontSize: 12 }}>
+                      <th key={h} style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid var(--border)", color: "var(--muted-foreground)", fontSize: 12 }}>
                         {h}
                       </th>
                     ))}
@@ -329,13 +336,13 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                 <tbody>
                   {projectMembers.map((emp) => (
                     <tr key={emp.id}>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)" }}>
                         <input className="input" value={emp.nom} onChange={(e) => editEmployee(emp.id, { nom: e.target.value })} />
                       </td>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)" }}>
                         <input className="input" value={emp.prenom} onChange={(e) => editEmployee(emp.id, { prenom: e.target.value })} />
                       </td>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)" }}>
                         <select className="input" value={emp.role} onChange={(e) => editEmployee(emp.id, { role: e.target.value })}>
                           {!ROLES.includes(emp.role as (typeof ROLES)[number]) && <option value={emp.role}>{emp.role}</option>}
                           {ROLES.map((r) => (
@@ -345,7 +352,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                           ))}
                         </select>
                       </td>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)" }}>
                         <input
                           className="input"
                           type="date"
@@ -353,7 +360,7 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                           onChange={(e) => editEmployee(emp.id, { birthday: e.target.value || undefined })}
                         />
                       </td>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)" }}>
                         <button
                           onClick={() => toggleActive(emp)}
                           style={{
@@ -363,14 +370,14 @@ export default function TeamPage({ state, setState }: TeamPageProps) {
                             fontWeight: 600,
                             border: "none",
                             cursor: "pointer",
-                            background: emp.active ? "#ecfdf5" : "#f1f5f9",
-                            color: emp.active ? "#047857" : "#64748b",
+                            background: emp.active ? "color-mix(in oklch, var(--conge-valide), white 85%)" : "var(--muted)",
+                            color: emp.active ? "color-mix(in oklch, var(--conge-valide), black 45%)" : "var(--muted-foreground)",
                           }}
                         >
                           {emp.active ? "Actif" : "Inactif"}
                         </button>
                       </td>
-                      <td style={{ padding: "6px 8px", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>
+                      <td style={{ padding: "6px 8px", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>
                         <button className="btn-ghost" onClick={() => removeEmployeeFromProject(emp, currentProject.id)}>
                           Retirer de l'équipe
                         </button>

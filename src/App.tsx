@@ -20,7 +20,19 @@ export default function App() {
 
   return (
     <div className="page" style={{ maxWidth: 1400, margin: "0 auto" }}>
-      <nav style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+      <nav
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 4,
+          marginBottom: 20,
+          border: "1px solid var(--border)",
+          background: "var(--card)",
+          borderRadius: "calc(var(--radius) + 4px)",
+          padding: 4,
+          width: "fit-content",
+        }}
+      >
         {NAV.map((n) => {
           const active = n.key === page;
           return (
@@ -29,13 +41,14 @@ export default function App() {
               onClick={() => setPage(n.key)}
               style={{
                 padding: "8px 16px",
-                fontSize: 14,
-                fontWeight: 600,
-                borderRadius: 8,
-                border: active ? "1px solid #2569f5" : "1px solid #e2e8f0",
-                background: active ? "#2569f5" : "#fff",
-                color: active ? "#fff" : "#334155",
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: "var(--radius)",
+                border: "none",
+                background: active ? "var(--secondary)" : "transparent",
+                color: active ? "var(--secondary-foreground)" : "var(--muted-foreground)",
                 cursor: "pointer",
+                whiteSpace: "nowrap",
               }}
             >
               {n.label}

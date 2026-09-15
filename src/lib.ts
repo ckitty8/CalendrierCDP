@@ -13,7 +13,7 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export const ROLES = ["Responsable", "Chef de projet", "Développeur", "Développeur stagiaire"] as const;
+export const ROLES = ["Responsable", "Chef d'équipe", "Développeur", "Développeur stagiaire"] as const;
 
 export const METHODES: Methode[] = ["cycle_v", "scrum", "kanban"];
 
