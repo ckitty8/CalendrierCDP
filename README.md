@@ -1,45 +1,39 @@
-# CalendrierCDP — Planning
+# CalendrierCDP — Planning DSI
 
-Application web (MVP) qui reproduit l'onglet **Planning** du fichier Excel
-`Calendrier_2026.xlsx` : un calendrier annuel par collaborateur, avec
-sélection multiple façon Excel et export mensuel au format `.xlsx`.
+Application de planning partagé pour suivre les congés et présences des
+équipes, jour par jour, et gérer les équipes/projets/personnes.
+
+Code repris de l'app Lovable `dsi-leave-buddy`.
 
 ## Fonctionnalités
 
-- Grille Planning (collaborateurs × jours du mois sélectionné), colonnes week-end grisées.
-- Sélection de cellules :
-  - clic = sélection simple
-  - `Ctrl`/`Cmd` + clic = ajouter/retirer une cellule
-  - `Maj` + clic = sélection rectangulaire (comme dans Excel)
-- Panneau d'édition : applique une catégorie (Présence, Férié, Fermeture,
-  Absent hors projet, Congé prévisionnel, Congé validé) et une valeur
-  (0 / 0,5 / 1) à toutes les cellules sélectionnées.
-- Bouton "Remplir {mois} en Présence" pour pré-remplir rapidement les jours ouvrés.
-- Liste des jours fériés français calculés pour l'année en cours.
-- **Export Excel mois par mois** : bouton "Télécharger {mois} en Excel"
-  qui génère un fichier `.xlsx` (feuille du mois, couleurs par catégorie,
-  en-têtes figés) directement dans le navigateur.
-- Persistance locale : les modifications sont sauvegardées automatiquement
-  dans le `localStorage` du navigateur (pas de backend).
+- Planning mensuel par équipe : une cellule par personne/jour, cycle de
+  saisie (présence → demi-journée → absence) au clic.
+- Jours spéciaux (fériés, fermetures) mis en évidence.
+- Page "Équipes & personnes" : gestion des équipes, projets et membres.
+- Congés cumulés par mois et par an, par personne.
 
 ## Stack technique
 
-- React + TypeScript + Vite
-- Tailwind CSS
-- [exceljs](https://github.com/exceljs/exceljs) pour la génération des fichiers Excel côté navigateur
-
-Application 100% front-end : aucun serveur, aucune base de données. Les
-données de départ (issues du fichier Excel d'origine, avec correction d'un
-décalage de dates de 2 jours détecté dans le fichier source) sont embarquées
-dans `src/seedData.json` et servent de point de départ ; toute modification
-faite dans l'app est ensuite conservée dans le navigateur.
+- [TanStack Start](https://tanstack.com/start) (React + SSR, sur Vite)
+- [TanStack Router](https://tanstack.com/router) + [TanStack Query](https://tanstack.com/query)
+- [Supabase](https://supabase.com) (Postgres) comme backend
+- Tailwind CSS v4 + [shadcn/ui](https://ui.shadcn.com) (Radix UI)
 
 ## Démarrage
 
 ```bash
 npm install
-npm run dev       # serveur de développement
-npm run build     # build de production (dist/)
+cp .env.example .env   # puis renseigner tes clés Supabase
+npm run dev
+```
+
+Il faut un projet Supabase (URL + clé publique) et avoir appliqué la
+migration de `supabase/migrations/` pour que l'app fonctionne — voir
+`.env.example`.
+
+```bash
+npm run build     # build de production
 npm run preview   # prévisualiser le build
 ```
 
@@ -47,18 +41,14 @@ npm run preview   # prévisualiser le build
 
 ```
 src/
-  types.ts              Types (Employee, DayEntry, catégories…)
-  lib.ts                 Utilitaires dates, jours fériés français
-  seedData.json          Données initiales (collaborateurs + jours 2026)
-  usePlanningState.ts    État React + persistance localStorage
-  exportExcel.ts          Génération et téléchargement du fichier Excel mensuel
-  App.tsx                 Interface Planning (grille, sélection, export)
+  routes/                Pages (TanStack Router — fichier = route)
+  components/ui/         Composants shadcn/ui
+  integrations/supabase/ Client Supabase (généré, ne pas éditer à la main)
+  lib/planning.ts         Logique métier du planning
+supabase/migrations/      Schéma de la base (à appliquer sur ton projet Supabase)
 ```
 
 ## État du projet
 
-Ceci est un **MVP** : l'objectif est d'avoir rapidement une version
-fonctionnelle de l'onglet Planning et de son export Excel. D'autres onglets
-du fichier Excel d'origine (Congés, Sprints, Équipe…) ainsi que des
-fonctionnalités plus avancées pourront être ajoutés dans une itération
-ultérieure.
+Le déploiement (cible SSR — Cloudflare par défaut via la config Lovable,
+Vercel, ou Node) reste à configurer.

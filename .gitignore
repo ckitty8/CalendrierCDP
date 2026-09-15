@@ -10,7 +10,17 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+.wrangler/
 *.local
+
+# Secrets locaux (crée ton propre .env à partir de .env.example)
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*
