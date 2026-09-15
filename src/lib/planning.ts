@@ -51,6 +51,21 @@ export const MOIS = [
 
 export const JOURS_COURTS = ["D", "L", "M", "M", "J", "V", "S"];
 
+export const MOIS_COURTS = [
+  "Janv",
+  "Fév",
+  "Mars",
+  "Avr",
+  "Mai",
+  "Juin",
+  "Juil",
+  "Août",
+  "Sept",
+  "Oct",
+  "Nov",
+  "Déc",
+];
+
 export function iso(annee: number, mois: number, jour: number) {
   return `${annee}-${String(mois + 1).padStart(2, "0")}-${String(jour).padStart(2, "0")}`;
 }

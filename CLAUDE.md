@@ -1,9 +1,7 @@
 # CalendrierCDP — règles du projet
 
-Application de planning d'équipe (congés/présences), reprise du code de
-l'app Lovable `dsi-leave-buddy`. Stack : **TanStack Start** (React + SSR,
-via Vite) + **Supabase** (Postgres) comme backend — ce n'est plus une
-app frontend-only/localStorage (ancienne version abandonnée).
+Application de planning d'équipe (congés/présences). Stack : **TanStack
+Start** (React + SSR, via Vite) + **Supabase** (Postgres) comme backend.
 
 ## Backend / configuration requise
 
@@ -12,18 +10,12 @@ app frontend-only/localStorage (ancienne version abandonnée).
   renseigne les clés (Project Settings > API).
 - Ne jamais committer `.env` (déjà dans `.gitignore`) ni coller une clé
   Supabase en dur dans le code ou dans un message.
-- Le client Supabase (`src/integrations/supabase/`) est generé/maintenu
-  par Lovable ("Do not edit it directly") — éviter d'y toucher à la main
-  si le projet reste synchronisé avec Lovable.
 
 ## Déploiement
 
-Le build n'est plus une SPA statique Vite : c'est une app SSR (Nitro,
-cible par défaut Cloudflare via `@lovable.dev/vite-tanstack-config`).
-L'ancien `vercel.json` (SPA statique, `outputDirectory: dist`) a été
-supprimé car obsolète — la cible de déploiement (Cloudflare, Vercel avec
-preset Nitro adapté, Node...) reste à décider avant tout déploiement en
-prod.
+Build Nitro avec le preset `node-server` (portable, déployable sur tout
+hébergeur Node — `node .output/server/index.mjs`). Adapter le preset dans
+`vite.config.ts` si une autre cible est retenue (Vercel, Cloudflare...).
 
 ## Workflow de validation
 
@@ -37,8 +29,9 @@ L'app doit rester utilisable sans débordement horizontal sur petit écran.
 
 ## Tests avant livraison
 
-1. `npm run build`
-2. Vérification interactive (desktop et mobile)
+1. `npx tsc --noEmit`
+2. `npm run build`
+3. Vérification interactive (desktop et mobile)
 
 ## Git
 

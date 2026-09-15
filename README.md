@@ -3,8 +3,6 @@
 Application de planning partagé pour suivre les congés et présences des
 équipes, jour par jour, et gérer les équipes/projets/personnes.
 
-Code repris de l'app Lovable `dsi-leave-buddy`.
-
 ## Fonctionnalités
 
 - Planning mensuel par équipe : une cellule par personne/jour, cycle de
@@ -33,7 +31,7 @@ migration de `supabase/migrations/` pour que l'app fonctionne — voir
 `.env.example`.
 
 ```bash
-npm run build     # build de production
+npm run build     # build de production (preset Nitro : node-server)
 npm run preview   # prévisualiser le build
 ```
 
@@ -43,12 +41,12 @@ npm run preview   # prévisualiser le build
 src/
   routes/                Pages (TanStack Router — fichier = route)
   components/ui/         Composants shadcn/ui
-  integrations/supabase/ Client Supabase (généré, ne pas éditer à la main)
+  integrations/supabase/ Client Supabase
   lib/planning.ts         Logique métier du planning
 supabase/migrations/      Schéma de la base (à appliquer sur ton projet Supabase)
 ```
 
 ## État du projet
 
-Le déploiement (cible SSR — Cloudflare par défaut via la config Lovable,
-Vercel, ou Node) reste à configurer.
+Build de production ciblant `node-server` (déployable sur tout hébergeur
+Node) ; à adapter si une autre cible est nécessaire (Vercel, Cloudflare…).

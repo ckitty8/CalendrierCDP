@@ -1,10 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
+import { Fragment, useMemo, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Select,
   SelectContent,
@@ -21,6 +26,7 @@ import {
   JOURS_COURTS,
   joursDuMois,
   MOIS,
+  MOIS_COURTS,
   TYPES_ABSENCE,
   type TypeAbsence,
 } from "@/lib/planning";
@@ -52,6 +58,7 @@ function Planning() {
   const [mois, setMois] = useState(new Date().getMonth());
   const [equipeFiltre, setEquipeFiltre] = useState<string>("toutes");
   const [typeSaisie, setTypeSaisie] = useState<TypeAbsence>("conge_valide");
+  const [congesOuvert, setCongesOuvert] = useState(true);
 
   const referentiel = useQuery({ queryKey: ["referentiel"], queryFn: chargerReferentiel });
   const jours = useQuery({ queryKey: ["jours", annee], queryFn: () => chargerJours(annee) });
@@ -101,6 +108,36 @@ function Planning() {
     }
     return total;
   }
+
+  // Bilan mensuel travaillé/congés par personne, calculé à partir du planning
+  // (mêmes règles que congesMois : week-ends et jours spéciaux exclus du calcul).
+  const bilanAnnuel = useMemo(() => {
+    const parMois = Array.from({ length: 12 }, (_, m) => joursDuMois(annee, m));
+    const bilan = new Map<string, { parMois: { travaille: number; conges: number }[]; totalTravaille: number; totalConges: number }>();
+    for (const m of membres) {
+      const moisDetail = parMois.map((jours) => {
+        let travaille = 0;
+        let conges = 0;
+        for (const c of jours) {
+          if (estWeekend(c.dow) || speciaux.has(c.date)) continue;
+          const s = saisies.get(`${m.id}|${c.date}`);
+          if (s) {
+            travaille += s.valeur;
+            conges += 1 - s.valeur;
+          } else {
+            travaille += 1;
+          }
+        }
+        return { travaille, conges };
+      });
+      bilan.set(m.id, {
+        parMois: moisDetail,
+        totalTravaille: moisDetail.reduce((s, x) => s + x.travaille, 0),
+        totalConges: moisDetail.reduce((s, x) => s + x.conges, 0),
+      });
+    }
+    return bilan;
+  }, [annee, membres, saisies, speciaux]);
 
   function cycler(membreId: string, date: string) {
     const actuel = saisies.get(`${membreId}|${date}`);
@@ -306,6 +343,103 @@ function Planning() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {membres.length > 0 && (
+          <Collapsible open={congesOuvert} onOpenChange={setCongesOuvert} className="mt-6 rounded-lg border bg-card">
+            <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left">
+              <div>
+                <h2 className="text-sm font-semibold">Jours de congés</h2>
+                <p className="text-xs text-muted-foreground">
+                  Travaillé / congés par mois, calculé automatiquement depuis le planning ci-dessus.
+                </p>
+              </div>
+              <ChevronDown
+                className={`size-4 shrink-0 text-muted-foreground transition-transform ${congesOuvert ? "rotate-180" : ""}`}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="overflow-x-auto border-t">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr>
+                      <th className="sticky left-0 z-10 min-w-48 border-b border-r bg-card px-3 py-2 text-left font-medium">
+                        Personne
+                      </th>
+                      {MOIS_COURTS.map((label) => (
+                        <th key={label} colSpan={2} className="border-b border-l px-2 py-1 text-center font-medium">
+                          {label}
+                        </th>
+                      ))}
+                      <th colSpan={2} className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">
+                        Total année
+                      </th>
+                    </tr>
+                    <tr>
+                      <th className="sticky left-0 z-10 border-b bg-card px-3 py-1" />
+                      {MOIS_COURTS.map((label) => (
+                        <Fragment key={label}>
+                          <th className="border-b border-l px-2 py-1 text-center font-normal text-muted-foreground">
+                            Trav.
+                          </th>
+                          <th className="border-b px-2 py-1 text-center font-normal text-muted-foreground">
+                            Cong.
+                          </th>
+                        </Fragment>
+                      ))}
+                      <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-normal text-muted-foreground">
+                        Trav.
+                      </th>
+                      <th className="border-b bg-muted/60 px-2 py-1 text-center font-normal text-muted-foreground">
+                        Cong.
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupes.map(({ equipe, membres: liste }) => (
+                      <Fragment key={equipe.id}>
+                        <tr>
+                          <td
+                            colSpan={MOIS_COURTS.length * 2 + 3}
+                            className="border-b border-t bg-muted/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
+                            style={{ color: equipe.couleur }}
+                          >
+                            {equipe.nom}
+                          </td>
+                        </tr>
+                        {liste.map((m) => {
+                          const bilan = bilanAnnuel.get(m.id);
+                          return (
+                            <tr key={m.id} className="hover:bg-accent/40">
+                              <td className="sticky left-0 z-10 border-b border-r bg-card px-3 py-1.5 font-medium">
+                                {m.nom}
+                              </td>
+                              {(bilan?.parMois ?? []).map((mois, i) => (
+                                <Fragment key={i}>
+                                  <td className="border-b border-l px-2 py-1 text-center font-mono">
+                                    {formatNombre(mois.travaille)}
+                                  </td>
+                                  <td className="border-b px-2 py-1 text-center font-mono text-muted-foreground">
+                                    {formatNombre(mois.conges)}
+                                  </td>
+                                </Fragment>
+                              ))}
+                              <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                                {formatNombre(bilan?.totalTravaille ?? 0)}
+                              </td>
+                              <td className="border-b bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                                {formatNombre(bilan?.totalConges ?? 0)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </div>
     </div>
