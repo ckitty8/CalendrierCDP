@@ -340,9 +340,6 @@ function Planning() {
                             {colonnes.map((c) => {
                               const sp = speciaux.get(c.date);
                               const s = saisies.get(`${m.id}|${c.date}`);
-                              const couleur = s
-                                ? TYPES_ABSENCE.find((t) => t.value === s.type)?.couleur
-                                : undefined;
                               const sansSaisie = !s && (estWeekend(c.dow) || !!sp);
                               return (
                                 <td
@@ -354,9 +351,8 @@ function Planning() {
                                     onClick={() => cycler(m.id, c.date)}
                                     title={sp ? sp.libelle : `${m.nom} — ${c.date}`}
                                     className={`flex h-8 w-full items-center justify-center font-mono text-xs transition-colors hover:ring-2 hover:ring-ring/40 hover:ring-inset ${
-                                      !s && sp ? "text-muted-foreground" : ""
+                                      s ? "font-semibold" : !s && sp ? "text-muted-foreground" : ""
                                     }`}
-                                    style={s ? { backgroundColor: couleur, color: "oklch(0.2 0 0)" } : undefined}
                                   >
                                     {s ? (s.valeur === 0.5 ? "0,5" : "0") : sp ? "0" : ""}
                                   </button>
@@ -502,20 +498,11 @@ function formatNombre(n: number) {
 function Legende() {
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-      {TYPES_ABSENCE.map((t) => (
-        <span key={t.value} className="flex items-center gap-1.5">
-          <span
-            className="inline-block size-3 rounded-sm border"
-            style={{ backgroundColor: t.couleur }}
-          />
-          {t.label}
-        </span>
-      ))}
       <span className="flex items-center gap-1.5">
         <span className="inline-block size-3 rounded-sm border bg-muted" /> Week-end / férié /
         fermeture
       </span>
-      <span>1 = présence · 0,5 = demi-journée · 0 = absence</span>
+      <span>vide = travaillé · 0,5 = demi-journée · 0 = congé</span>
     </div>
   );
 }
