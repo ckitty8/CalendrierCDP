@@ -13,9 +13,14 @@ Start** (React + SSR, via Vite) + **Supabase** (Postgres) comme backend.
 
 ## Déploiement
 
-Build Nitro avec le preset `node-server` (portable, déployable sur tout
-hébergeur Node — `node .output/server/index.mjs`). Adapter le preset dans
-`vite.config.ts` si une autre cible est retenue (Vercel, Cloudflare...).
+Build Nitro avec le preset `vercel` (`.vercel/output`, Build Output API
+v3 — déploiement zero-config sur Vercel, qui héberge déjà ce projet).
+Le projet Vercel doit avoir les variables d'environnement Supabase
+(`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`,
+`VITE_SUPABASE_PUBLISHABLE_KEY` — voir `.env.example`) configurées dans
+ses Project Settings, sinon l'app déployée ne peut pas se connecter à la
+base. Changer le preset dans `vite.config.ts` si une autre cible est
+retenue un jour.
 
 ## Workflow de validation
 

@@ -31,7 +31,7 @@ migration de `supabase/migrations/` pour que l'app fonctionne — voir
 `.env.example`.
 
 ```bash
-npm run build     # build de production (preset Nitro : node-server)
+npm run build     # build de production (preset Nitro : vercel)
 npm run preview   # prévisualiser le build
 ```
 
@@ -48,5 +48,7 @@ supabase/migrations/      Schéma de la base (à appliquer sur ton projet Supaba
 
 ## État du projet
 
-Build de production ciblant `node-server` (déployable sur tout hébergeur
-Node) ; à adapter si une autre cible est nécessaire (Vercel, Cloudflare…).
+Build de production ciblant Vercel (preset Nitro `vercel`). Le projet
+Vercel doit avoir les variables d'environnement Supabase renseignées
+dans ses Project Settings (voir `.env.example`) sinon l'app déployée ne
+peut pas se connecter à la base.

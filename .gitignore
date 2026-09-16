@@ -15,6 +15,7 @@ dist-ssr
 .tanstack/**
 .nitro
 .wrangler/
+.vercel/
 *.local
 
 # Secrets locaux (crée ton propre .env à partir de .env.example)
