@@ -337,6 +337,10 @@ function Planning() {
                               const sp = speciaux.get(c.date);
                               const s = saisies.get(`${m.id}|${c.date}`);
                               const sansSaisie = !s && (estWeekend(c.dow) || !!sp);
+                              const couleur =
+                                s?.type === "conge_valide" || s?.type === "conge_previsionnel"
+                                  ? TYPES_ABSENCE.find((t) => t.value === s.type)?.couleur
+                                  : undefined;
                               return (
                                 <td
                                   key={c.date}
@@ -349,6 +353,7 @@ function Planning() {
                                     className={`flex h-8 w-full items-center justify-center font-mono text-xs transition-colors hover:ring-2 hover:ring-ring/40 hover:ring-inset ${
                                       s ? "font-semibold" : !s && sp ? "text-muted-foreground" : ""
                                     }`}
+                                    style={couleur ? { backgroundColor: couleur, color: "oklch(0.2 0 0)" } : undefined}
                                   >
                                     {s ? (s.valeur === 0.5 ? "0,5" : s.valeur === 0 ? "0" : "") : sp ? "0" : ""}
                                   </button>
@@ -486,8 +491,21 @@ function formatNombre(n: number) {
 }
 
 function Legende() {
+  const validee = TYPES_ABSENCE.find((t) => t.value === "conge_valide");
+  const previsionnelle = TYPES_ABSENCE.find((t) => t.value === "conge_previsionnel");
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1.5">
+        <span className="inline-block size-3 rounded-sm border" style={{ backgroundColor: validee?.couleur }} />
+        Congé validé
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span
+          className="inline-block size-3 rounded-sm border"
+          style={{ backgroundColor: previsionnelle?.couleur }}
+        />
+        Congé non validé
+      </span>
       <span className="flex items-center gap-1.5">
         <span className="inline-block size-3 rounded-sm border bg-muted" /> Week-end / férié /
         fermeture
