@@ -1,21 +1,21 @@
--- Remplace les données de démonstration par les vraies données de l'équipe DSI (Calendrier_2026.xlsx)
+-- Remplace les données de démonstration par les vraies données de l'équipe CDO (Calendrier_2026.xlsx)
 DELETE FROM public.jours;
 DELETE FROM public.membres;
 DELETE FROM public.projets;
 DELETE FROM public.equipes;
 
-INSERT INTO public.equipes (nom, couleur) VALUES ('DSI', '#2563eb');
+INSERT INTO public.equipes (nom, couleur) VALUES ('CDO', '#2563eb');
 
 INSERT INTO public.membres (equipe_id, nom)
-SELECT id, 'LABBE Christelle' FROM public.equipes WHERE nom='DSI'
+SELECT id, 'LABBE Christelle' FROM public.equipes WHERE nom='CDO'
 UNION ALL
-SELECT id, 'BOUJELBEN Nouha' FROM public.equipes WHERE nom='DSI'
+SELECT id, 'BOUJELBEN Nouha' FROM public.equipes WHERE nom='CDO'
 UNION ALL
-SELECT id, 'HOUSSOU Lenaic' FROM public.equipes WHERE nom='DSI'
+SELECT id, 'HOUSSOU Lenaic' FROM public.equipes WHERE nom='CDO'
 UNION ALL
-SELECT id, 'CASELLI Anne' FROM public.equipes WHERE nom='DSI'
+SELECT id, 'CASELLI Anne' FROM public.equipes WHERE nom='CDO'
 UNION ALL
-SELECT id, 'KERARMA Cerine' FROM public.equipes WHERE nom='DSI';
+SELECT id, 'KERARMA Cerine' FROM public.equipes WHERE nom='CDO';
 
 INSERT INTO public.jours (membre_id, date, valeur, type)
 SELECT m.id, '2026-01-10'::date, 0.0, 'conge_previsionnel' FROM public.membres m WHERE m.nom = 'LABBE Christelle'
