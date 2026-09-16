@@ -119,16 +119,19 @@ export function valeurEffective(saisieValeur: number | undefined, estJourSpecial
   return estJourSpecial ? 0 : 1;
 }
 
-// Case vide = jour travaillé (aucune ligne en base), 0 = jour de congé,
-// 0,5 = demi-journée. Règle identique pour toutes les cases, y compris les
-// jours fériés/fermeture (qui ne sont pas bloqués et suivent le même cycle).
+// Case vide = valeur par défaut du jour (aucune ligne en base) : travaillé
+// pour un jour normal, non travaillé (congé) pour un jour férié/fermeture.
+// 0 = congé, 0,5 = demi-journée. Un jour férié/fermeture reste modifiable
+// comme n'importe quel autre jour, y compris pour le marquer travaillé.
 export async function enregistrerJour(
   membre_id: string,
   date: string,
   valeur: number,
   type: TypeAbsence,
+  estJourSpecial = false,
 ) {
-  if (valeur >= 1) {
+  const estValeurParDefaut = estJourSpecial ? valeur === 0 : valeur >= 1;
+  if (estValeurParDefaut) {
     const { error } = await supabase.from("jours").delete().eq("membre_id", membre_id).eq("date", date);
     if (error) throw error;
     return;
