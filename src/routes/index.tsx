@@ -55,7 +55,7 @@ const ANNEE_DEFAUT = 2026;
 function Planning() {
   const queryClient = useQueryClient();
   const [annee, setAnnee] = useState(ANNEE_DEFAUT);
-  const [mois, setMois] = useState(new Date().getMonth());
+  const [mois, setMois] = useState(0);
   const [equipeFiltre, setEquipeFiltre] = useState<string>("toutes");
   const [typeSaisie, setTypeSaisie] = useState<TypeAbsence>("conge_valide");
   const [congesOuvert, setCongesOuvert] = useState(true);
@@ -138,6 +138,28 @@ function Planning() {
     }
     return bilan;
   }, [annee, membres, saisies, speciaux]);
+
+  // Total agrégé (toutes les personnes actuellement affichées, selon le filtre équipe).
+  const totalGeneral = useMemo(() => {
+    const parMois = Array.from({ length: 12 }, () => ({ travaille: 0, conges: 0 }));
+    let totalTravaille = 0;
+    let totalConges = 0;
+    for (const { membres: liste } of groupes) {
+      for (const m of liste) {
+        const bilan = bilanAnnuel.get(m.id);
+        if (!bilan) continue;
+        bilan.parMois.forEach((mois, i) => {
+          const cible = parMois[i];
+          if (!cible) return;
+          cible.travaille += mois.travaille;
+          cible.conges += mois.conges;
+        });
+        totalTravaille += bilan.totalTravaille;
+        totalConges += bilan.totalConges;
+      }
+    }
+    return { parMois, totalTravaille, totalConges };
+  }, [groupes, bilanAnnuel]);
 
   function cycler(membreId: string, date: string) {
     const actuel = saisies.get(`${membreId}|${date}`);
@@ -445,6 +467,25 @@ function Planning() {
                         })}
                       </Fragment>
                     ))}
+                    <tr className="bg-muted/60 font-semibold">
+                      <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">Total</td>
+                      {totalGeneral.parMois.map((mois, i) => (
+                        <Fragment key={i}>
+                          <td className="border-t border-l px-2 py-1 text-center font-mono">
+                            {formatNombre(mois.travaille)}
+                          </td>
+                          <td className="border-t px-2 py-1 text-center font-mono">
+                            {formatNombre(mois.conges)}
+                          </td>
+                        </Fragment>
+                      ))}
+                      <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+                        {formatNombre(totalGeneral.totalTravaille)}
+                      </td>
+                      <td className="border-t bg-muted px-2 py-1 text-center font-mono">
+                        {formatNombre(totalGeneral.totalConges)}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
