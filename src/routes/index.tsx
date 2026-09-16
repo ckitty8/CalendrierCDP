@@ -264,7 +264,8 @@ function Planning() {
 
                 <p className="text-xs text-muted-foreground">
                   Cliquez sur une case : vide (travaillé) → 0,5 (demi-journée) → 0 (congé) → vide.
-                  Aucun jour n&apos;est bloqué, y compris les jours fériés et de fermeture.
+                  Les jours fériés et de fermeture sont automatiquement à 0, mais restent
+                  modifiables comme n&apos;importe quel autre jour.
                 </p>
               </div>
 
@@ -352,10 +353,12 @@ function Planning() {
                                     type="button"
                                     onClick={() => cycler(m.id, c.date)}
                                     title={sp ? sp.libelle : `${m.nom} — ${c.date}`}
-                                    className="flex h-8 w-full items-center justify-center font-mono text-xs transition-colors hover:ring-2 hover:ring-ring/40 hover:ring-inset"
+                                    className={`flex h-8 w-full items-center justify-center font-mono text-xs transition-colors hover:ring-2 hover:ring-ring/40 hover:ring-inset ${
+                                      !s && sp ? "text-muted-foreground" : ""
+                                    }`}
                                     style={s ? { backgroundColor: couleur, color: "oklch(0.2 0 0)" } : undefined}
                                   >
-                                    {s ? (s.valeur === 0.5 ? "0,5" : "0") : ""}
+                                    {s ? (s.valeur === 0.5 ? "0,5" : "0") : sp ? "0" : ""}
                                   </button>
                                 </td>
                               );
