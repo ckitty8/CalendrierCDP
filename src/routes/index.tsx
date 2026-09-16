@@ -88,18 +88,6 @@ function Planning() {
     .filter((e) => equipeFiltre === "toutes" || e.id === equipeFiltre)
     .map((e) => ({ equipe: e, membres: membres.filter((m) => m.equipe_id === e.id) }));
 
-  // Congés du mois affiché, uniquement du lundi au vendredi. Un jour férié ou
-  // de fermeture compte comme non travaillé par défaut (sauf saisie contraire).
-  function congesMois(membreId: string) {
-    let total = 0;
-    for (const c of colonnes) {
-      if (estWeekend(c.dow)) continue;
-      const s = saisies.get(`${membreId}|${c.date}`);
-      total += 1 - valeurEffective(s?.valeur, speciaux.has(c.date));
-    }
-    return total;
-  }
-
   // Bilan mensuel travaillé/non travaillé par personne, du lundi au vendredi,
   // calculé à partir du planning : un jour férié/fermeture sans saisie compte
   // comme non travaillé, un jour normal sans saisie compte comme travaillé.
@@ -297,14 +285,6 @@ function Planning() {
                           </th>
                         );
                       })}
-                      <th className="border-b border-r px-2 py-1 text-center text-xs font-medium">
-                        Non trav.
-                        <div className="text-[10px] font-normal text-muted-foreground">mois</div>
-                      </th>
-                      <th className="border-b px-2 py-1 text-center text-xs font-medium">
-                        Non trav.
-                        <div className="text-[10px] font-normal text-muted-foreground">année</div>
-                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -312,7 +292,7 @@ function Planning() {
                       <Fragment key={equipe.id}>
                         <tr>
                           <td
-                            colSpan={colonnes.length + 3}
+                            colSpan={colonnes.length + 1}
                             className="border-b border-t bg-muted/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
                             style={{ color: equipe.couleur }}
                           >
@@ -322,7 +302,7 @@ function Planning() {
                         {liste.length === 0 && (
                           <tr>
                             <td
-                              colSpan={colonnes.length + 3}
+                              colSpan={colonnes.length + 1}
                               className="border-b px-3 py-2 text-xs text-muted-foreground"
                             >
                               Aucune personne dans cette équipe
@@ -359,12 +339,6 @@ function Planning() {
                                 </td>
                               );
                             })}
-                            <td className="border-b border-r px-2 text-center font-mono text-xs">
-                              {formatNombre(congesMois(m.id))}
-                            </td>
-                            <td className="border-b px-2 text-center font-mono text-xs text-muted-foreground">
-                              {formatNombre(bilanAnnuel.get(m.id)?.totalConges ?? 0)}
-                            </td>
                           </tr>
                         ))}
                       </Fragment>
