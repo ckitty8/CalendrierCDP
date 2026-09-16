@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -130,6 +130,14 @@ function Equipes() {
       </header>
 
       <div className="mx-auto grid max-w-5xl gap-6 px-6 py-6">
+        {referentiel.isError && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm">
+            <div className="flex items-center gap-2 font-medium text-destructive">
+              <AlertTriangle className="size-4" /> Impossible de charger les données depuis Supabase.
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{(referentiel.error as Error | null)?.message}</p>
+          </div>
+        )}
         <section className="rounded-lg border bg-card p-5">
           <h2 className="font-semibold">Équipes</h2>
           <div className="mt-3 flex flex-wrap items-end gap-3">

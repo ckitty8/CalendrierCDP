@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useMemo, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -223,7 +223,17 @@ function Planning() {
 
         <Legende />
 
-        {referentiel.isLoading ? (
+        {referentiel.isError || jours.isError ? (
+          <div className="mt-8 rounded-lg border border-destructive/40 bg-destructive/5 p-8 text-center">
+            <AlertTriangle className="mx-auto size-6 text-destructive" />
+            <p className="mt-3 text-sm font-medium text-destructive">
+              Impossible de charger les données depuis Supabase.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {(referentiel.error as Error | null)?.message ?? (jours.error as Error | null)?.message}
+            </p>
+          </div>
+        ) : referentiel.isLoading ? (
           <p className="mt-8 text-sm text-muted-foreground">Chargement du planning…</p>
         ) : membres.length === 0 ? (
           <div className="mt-8 rounded-lg border bg-card p-8 text-center">
