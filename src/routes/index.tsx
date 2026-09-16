@@ -60,13 +60,8 @@ function Planning() {
   const jours = useQuery({ queryKey: ["jours", annee], queryFn: () => chargerJours(annee) });
 
   const mutation = useMutation({
-    mutationFn: (v: {
-      membre_id: string;
-      date: string;
-      valeur: number;
-      type: TypeAbsence;
-      special: boolean;
-    }) => enregistrerJour(v.membre_id, v.date, v.valeur, v.type, v.special),
+    mutationFn: (v: { membre_id: string; date: string; valeur: number; type: TypeAbsence }) =>
+      enregistrerJour(v.membre_id, v.date, v.valeur, v.type),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["jours", annee] }),
     onError: (e: Error) => toast.error("Enregistrement impossible : " + e.message),
   });
@@ -155,24 +150,13 @@ function Planning() {
     return { parMois, totalTravaille, totalConges };
   }, [groupes, bilanAnnuel]);
 
-  // Un jour normal cycle présence(défaut) → demi-journée → absence → présence.
-  // Un jour férié/fermeture cycle non travaillé(défaut) → demi-journée →
-  // présence (travaillé) → non travaillé, pour pouvoir marquer un jour férié
-  // effectivement travaillé sans qu'il soit bloqué.
-  function cycler(membreId: string, date: string, special: boolean) {
+  // Case vide = travaillé (défaut, aucune ligne en base) → demi-journée (0,5)
+  // → congé (0) → retour à vide. Règle identique pour toutes les cases, y
+  // compris les jours fériés/fermeture : aucune case n'est bloquée.
+  function cycler(membreId: string, date: string) {
     const actuel = saisies.get(`${membreId}|${date}`);
-    const valeur = special
-      ? actuel === undefined
-        ? 0.5
-        : actuel.valeur === 0.5
-          ? 1
-          : 0
-      : actuel === undefined
-        ? 0.5
-        : actuel.valeur === 0.5
-          ? 0
-          : 1;
-    mutation.mutate({ membre_id: membreId, date, valeur, type: typeSaisie, special });
+    const valeur = actuel === undefined ? 0.5 : actuel.valeur === 0.5 ? 0 : 1;
+    mutation.mutate({ membre_id: membreId, date, valeur, type: typeSaisie });
   }
 
   const naviguer = (delta: number) => {
@@ -279,9 +263,8 @@ function Planning() {
                 </Select>
 
                 <p className="text-xs text-muted-foreground">
-                  Cliquez sur une case pour la modifier (demi-journée, puis journée pleine ou absence,
-                  puis retour à la valeur par défaut du jour). Aucun jour n&apos;est bloqué, y compris
-                  les jours fériés et de fermeture.
+                  Cliquez sur une case : vide (travaillé) → 0,5 (demi-journée) → 0 (congé) → vide.
+                  Aucun jour n&apos;est bloqué, y compris les jours fériés et de fermeture.
                 </p>
               </div>
 
@@ -367,7 +350,7 @@ function Planning() {
                                 >
                                   <button
                                     type="button"
-                                    onClick={() => cycler(m.id, c.date, !!sp)}
+                                    onClick={() => cycler(m.id, c.date)}
                                     title={sp ? sp.libelle : `${m.nom} — ${c.date}`}
                                     className="flex h-8 w-full items-center justify-center font-mono text-xs transition-colors hover:ring-2 hover:ring-ring/40 hover:ring-inset"
                                     style={s ? { backgroundColor: couleur, color: "oklch(0.2 0 0)" } : undefined}
