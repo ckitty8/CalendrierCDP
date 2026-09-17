@@ -20,15 +20,19 @@ export type Jour = {
 export type JourSpecial = { id: string; date: string; libelle: string; type: string };
 
 export type TypeAbsence =
+  | "non_classe"
   | "conge_valide"
   | "conge_previsionnel"
   | "absent_projet"
   | "teletravail"
   | "formation";
 
+// "non_classe" est le type par défaut d'une valeur tapée directement dans une
+// case, avant d'être classée (couleur) via un clic sur "Congé validé" ou
+// "Congé non validé" — volontairement sans couleur dans TYPES_ABSENCE.
 export const TYPES_ABSENCE: { value: TypeAbsence; label: string; couleur: string }[] = [
   { value: "conge_valide", label: "Congé validé", couleur: "var(--conge-valide)" },
-  { value: "conge_previsionnel", label: "Congé prévisionnel", couleur: "var(--conge-prev)" },
+  { value: "conge_previsionnel", label: "Congé non validé", couleur: "var(--conge-prev)" },
   { value: "absent_projet", label: "Absent du projet", couleur: "var(--absent-projet)" },
   { value: "teletravail", label: "Télétravail", couleur: "var(--teletravail)" },
   { value: "formation", label: "Formation", couleur: "var(--formation)" },

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -54,7 +54,7 @@ function Planning() {
   const [annee, setAnnee] = useState(ANNEE_DEFAUT);
   const [mois, setMois] = useState(0);
   const [equipeFiltre, setEquipeFiltre] = useState<string>("toutes");
-  const [typeSaisie, setTypeSaisie] = useState<TypeAbsence>("conge_valide");
+  const [celluleActive, setCelluleActive] = useState<{ membreId: string; date: string } | null>(null);
 
   const referentiel = useQuery({ queryKey: ["referentiel"], queryFn: chargerReferentiel });
   const jours = useQuery({ queryKey: ["jours", annee], queryFn: () => chargerJours(annee) });
@@ -143,24 +143,28 @@ function Planning() {
     return { parMois, totalTravaille, totalConges };
   }, [groupes, bilanAnnuel]);
 
-  // Case vide = valeur par défaut du jour. Un jour normal cycle
-  // travaillé(défaut) → 0,5 → congé(0) → travaillé. Un jour férié/fermeture
-  // cycle congé(défaut) → 0,5 → travaillé → congé, pour pouvoir le marquer
-  // effectivement travaillé si besoin — aucune case n'est bloquée.
-  function cycler(membreId: string, date: string, special: boolean) {
+  // Enregistre la valeur tapée au clavier (0, 0,5 ou vide = travaillé), en
+  // conservant le type/couleur déjà présent sur la case le cas échéant.
+  function commitValeur(membreId: string, date: string, valeur: number, special: boolean) {
     const actuel = saisies.get(`${membreId}|${date}`);
-    const valeur = special
-      ? actuel === undefined
-        ? 0.5
-        : actuel.valeur === 0.5
-          ? 1
-          : 0
-      : actuel === undefined
-        ? 0.5
-        : actuel.valeur === 0.5
-          ? 0
-          : 1;
-    mutation.mutate({ membre_id: membreId, date, valeur, type: typeSaisie, special });
+    const type: TypeAbsence = actuel?.type ?? "non_classe";
+    mutation.mutate({ membre_id: membreId, date, valeur, type, special });
+  }
+
+  // Applique une couleur (congé validé/non validé) à la case actuellement
+  // sélectionnée (dernière case cliquée/tapée), sans changer sa valeur.
+  function appliquerType(type: TypeAbsence) {
+    if (!celluleActive) {
+      toast.error("Cliquez d'abord sur une case du planning.");
+      return;
+    }
+    const s = saisies.get(`${celluleActive.membreId}|${celluleActive.date}`);
+    if (!s) {
+      toast.error("Saisissez d'abord une valeur (0 ou 0,5) dans la case.");
+      return;
+    }
+    const special = speciaux.has(celluleActive.date);
+    mutation.mutate({ membre_id: celluleActive.membreId, date: celluleActive.date, valeur: s.valeur, type, special });
   }
 
   const naviguer = (delta: number) => {
@@ -253,27 +257,14 @@ function Planning() {
                   </Button>
                 </div>
 
-                <Select value={typeSaisie} onValueChange={(v) => setTypeSaisie(v as TypeAbsence)}>
-                  <SelectTrigger className="w-56">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TYPES_ABSENCE.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
                 <p className="text-xs text-muted-foreground">
-                  Cliquez sur une case pour la faire changer, jusqu&apos;à revenir à sa valeur par
-                  défaut : travaillé (vide) pour un jour normal, congé (0) pour un jour férié ou de
-                  fermeture. Un jour férié reste modifiable, par exemple pour le marquer travaillé.
+                  Cliquez sur une case et tapez 0 (congé) ou 0,5 (demi-journée) au clavier — laissez
+                  vide pour travaillé. Puis cliquez sur « Congé validé » ou « Congé non validé »
+                  ci-dessous pour colorer la case sélectionnée.
                 </p>
               </div>
 
-              <Legende />
+              <Legende onAppliquer={appliquerType} />
 
               <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
                 <table className="w-full border-collapse text-sm">
@@ -337,26 +328,21 @@ function Planning() {
                               const sp = speciaux.get(c.date);
                               const s = saisies.get(`${m.id}|${c.date}`);
                               const sansSaisie = !s && (estWeekend(c.dow) || !!sp);
-                              const couleur =
-                                s?.type === "conge_valide" || s?.type === "conge_previsionnel"
-                                  ? TYPES_ABSENCE.find((t) => t.value === s.type)?.couleur
-                                  : undefined;
+                              const estActive =
+                                celluleActive?.membreId === m.id && celluleActive?.date === c.date;
                               return (
                                 <td
                                   key={c.date}
                                   className={`border-b border-r p-0 text-center ${sansSaisie ? "bg-muted" : ""}`}
                                 >
-                                  <button
-                                    type="button"
-                                    onClick={() => cycler(m.id, c.date, !!sp)}
-                                    title={sp ? sp.libelle : `${m.nom} — ${c.date}`}
-                                    className={`flex h-8 w-full items-center justify-center font-mono text-xs transition-colors hover:ring-2 hover:ring-ring/40 hover:ring-inset ${
-                                      s ? "font-semibold" : !s && sp ? "text-muted-foreground" : ""
-                                    }`}
-                                    style={couleur ? { backgroundColor: couleur, color: "oklch(0.2 0 0)" } : undefined}
-                                  >
-                                    {s ? (s.valeur === 0.5 ? "0,5" : s.valeur === 0 ? "0" : "") : sp ? "0" : ""}
-                                  </button>
+                                  <CelluleValeur
+                                    saisie={s}
+                                    special={!!sp}
+                                    titre={sp ? sp.libelle : `${m.nom} — ${c.date}`}
+                                    active={estActive}
+                                    onFocusCell={() => setCelluleActive({ membreId: m.id, date: c.date })}
+                                    onCommit={(valeur) => commitValeur(m.id, c.date, valeur, !!sp)}
+                                  />
                                 </td>
                               );
                             })}
@@ -490,27 +476,105 @@ function formatNombre(n: number) {
   return n === 0 ? "—" : String(n).replace(".", ",");
 }
 
-function Legende() {
+function Legende({ onAppliquer }: { onAppliquer: (type: TypeAbsence) => void }) {
   const validee = TYPES_ABSENCE.find((t) => t.value === "conge_valide");
   const previsionnelle = TYPES_ABSENCE.find((t) => t.value === "conge_previsionnel");
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
-      <span className="flex items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+      <button
+        type="button"
+        onClick={() => onAppliquer("conge_valide")}
+        title="Appliquer cette couleur à la case sélectionnée"
+        className="flex items-center gap-1.5 rounded-md border px-2 py-1 transition-colors hover:bg-accent"
+      >
         <span className="inline-block size-3 rounded-sm border" style={{ backgroundColor: validee?.couleur }} />
         Congé validé
-      </span>
-      <span className="flex items-center gap-1.5">
+      </button>
+      <button
+        type="button"
+        onClick={() => onAppliquer("conge_previsionnel")}
+        title="Appliquer cette couleur à la case sélectionnée"
+        className="flex items-center gap-1.5 rounded-md border px-2 py-1 transition-colors hover:bg-accent"
+      >
         <span
           className="inline-block size-3 rounded-sm border"
           style={{ backgroundColor: previsionnelle?.couleur }}
         />
         Congé non validé
-      </span>
+      </button>
       <span className="flex items-center gap-1.5">
         <span className="inline-block size-3 rounded-sm border bg-muted" /> Week-end / férié /
         fermeture
       </span>
-      <span>vide = travaillé · 0,5 = demi-journée · 0 = congé</span>
     </div>
+  );
+}
+
+// Case de saisie : tape directement 0, 0,5 ou vide (= travaillé) au clavier.
+// La couleur ne s'applique jamais toute seule ici — elle vient du clic sur
+// « Congé validé »/« Congé non validé » dans la légende, sur la case active
+// (celle qui a le focus, ou la dernière sur laquelle on a cliqué).
+function CelluleValeur({
+  saisie,
+  special,
+  titre,
+  active,
+  onFocusCell,
+  onCommit,
+}: {
+  saisie: { valeur: number; type: TypeAbsence } | undefined;
+  special: boolean;
+  titre: string;
+  active: boolean;
+  onFocusCell: () => void;
+  onCommit: (valeur: number) => void;
+}) {
+  const affichage = saisie ? (saisie.valeur === 0.5 ? "0,5" : saisie.valeur === 0 ? "0" : "1") : "";
+  const [texte, setTexte] = useState(affichage);
+
+  useEffect(() => setTexte(affichage), [affichage]);
+
+  const couleur =
+    saisie?.type === "conge_valide" || saisie?.type === "conge_previsionnel"
+      ? TYPES_ABSENCE.find((t) => t.value === saisie.type)?.couleur
+      : undefined;
+
+  const valider = () => {
+    const brut = texte.trim().replace(",", ".");
+    let valeur: number | null = null;
+    if (brut === "") valeur = 1;
+    else if (brut === "0") valeur = 0;
+    else if (brut === "0.5") valeur = 0.5;
+    else if (brut === "1") valeur = 1;
+    if (valeur === null) {
+      setTexte(affichage);
+      return;
+    }
+    const valeurActuelle = saisie ? saisie.valeur : 1;
+    if (valeur === valeurActuelle) return;
+    onCommit(valeur);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={texte}
+      onChange={(e) => setTexte(e.target.value)}
+      onFocus={onFocusCell}
+      onBlur={valider}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+      }}
+      placeholder={!saisie && special ? "0" : ""}
+      title={titre}
+      className={`h-8 w-full border-0 bg-transparent text-center font-mono text-xs outline-none ${
+        saisie ? "font-semibold" : special ? "placeholder:text-muted-foreground" : ""
+      } ${active ? "ring-2 ring-inset ring-ring" : ""}`}
+      style={couleur ? { backgroundColor: couleur, color: "oklch(0.2 0 0)" } : undefined}
+    />
   );
 }
