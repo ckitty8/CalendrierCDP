@@ -635,6 +635,7 @@ function CelluleValeur({
     else if (brut === "0.5") valeur = 0.5;
     else if (brut === "1") valeur = 1;
     if (valeur === null) {
+      if (texte !== affichage) toast.error("Valeur invalide : tapez 0, 0,5, ou laissez vide (travaillé).");
       setTexte(affichage);
       return;
     }
@@ -655,7 +656,10 @@ function CelluleValeur({
           onSelectionner({ shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey });
         }
       }}
-      onFocus={onFocusCell}
+      onFocus={(e) => {
+        onFocusCell();
+        e.target.select();
+      }}
       onBlur={valider}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
