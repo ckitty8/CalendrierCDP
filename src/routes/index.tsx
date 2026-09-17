@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,12 +49,50 @@ export const Route = createFileRoute("/")({
 
 const ANNEE_DEFAUT = 2026;
 
+const COULEURS_DEFAUT = {
+  conge_valide: "#5bbe62",
+  conge_previsionnel: "#e8cd62",
+  horsTravail: "#f1f5f9",
+} as const;
+type CleCouleur = keyof typeof COULEURS_DEFAUT;
+const CLE_STOCKAGE_COULEURS = "planning-couleurs";
+
+// Couleurs personnalisables par l'utilisateur (persistées dans ce navigateur).
+// Lues après le montage pour éviter un écart entre le rendu serveur et client.
+function useCouleursPersonnalisees() {
+  const [couleurs, setCouleurs] = useState<Record<CleCouleur, string>>(COULEURS_DEFAUT);
+
+  useEffect(() => {
+    try {
+      const brut = window.localStorage.getItem(CLE_STOCKAGE_COULEURS);
+      if (brut) setCouleurs((prev) => ({ ...prev, ...JSON.parse(brut) }));
+    } catch {
+      // localStorage indisponible (navigation privée, etc.) : on garde les couleurs par défaut.
+    }
+  }, []);
+
+  const definirCouleur = (cle: CleCouleur, valeur: string) => {
+    setCouleurs((prev) => {
+      const next = { ...prev, [cle]: valeur };
+      try {
+        window.localStorage.setItem(CLE_STOCKAGE_COULEURS, JSON.stringify(next));
+      } catch {
+        // idem
+      }
+      return next;
+    });
+  };
+
+  return { couleurs, definirCouleur };
+}
+
 function Planning() {
   const queryClient = useQueryClient();
   const [annee, setAnnee] = useState(ANNEE_DEFAUT);
   const [mois, setMois] = useState(0);
   const [equipeFiltre, setEquipeFiltre] = useState<string>("toutes");
   const [typeSaisie, setTypeSaisie] = useState<TypeAbsence>("conge_valide");
+  const { couleurs, definirCouleur } = useCouleursPersonnalisees();
 
   const referentiel = useQuery({ queryKey: ["referentiel"], queryFn: chargerReferentiel });
   const jours = useQuery({ queryKey: ["jours", annee], queryFn: () => chargerJours(annee) });
@@ -273,7 +311,7 @@ function Planning() {
                 </p>
               </div>
 
-              <Legende />
+              <Legende couleurs={couleurs} definirCouleur={definirCouleur} />
 
               <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
                 <table className="w-full border-collapse text-sm">
@@ -289,12 +327,9 @@ function Planning() {
                             key={c.date}
                             title={sp?.libelle}
                             className={`w-8 border-b border-r px-0 py-1 text-center text-xs font-medium ${
-                              sp
-                                ? "text-[oklch(0.55_0.17_25)]"
-                                : estWeekend(c.dow)
-                                  ? "bg-muted text-muted-foreground"
-                                  : ""
+                              sp ? "text-[oklch(0.55_0.17_25)]" : estWeekend(c.dow) ? "text-muted-foreground" : ""
                             }`}
+                            style={estWeekend(c.dow) ? { backgroundColor: couleurs.horsTravail } : undefined}
                           >
                             <div className="font-mono">{c.jour}</div>
                             <div className="text-[10px] text-muted-foreground">{JOURS_COURTS[c.dow]}</div>
@@ -338,13 +373,16 @@ function Planning() {
                               const s = saisies.get(`${m.id}|${c.date}`);
                               const sansSaisie = !s && (estWeekend(c.dow) || !!sp);
                               const couleur =
-                                s?.type === "conge_valide" || s?.type === "conge_previsionnel"
-                                  ? TYPES_ABSENCE.find((t) => t.value === s.type)?.couleur
-                                  : undefined;
+                                s?.type === "conge_valide"
+                                  ? couleurs.conge_valide
+                                  : s?.type === "conge_previsionnel"
+                                    ? couleurs.conge_previsionnel
+                                    : undefined;
                               return (
                                 <td
                                   key={c.date}
-                                  className={`border-b border-r p-0 text-center ${sansSaisie ? "bg-muted" : ""}`}
+                                  className="border-b border-r p-0 text-center"
+                                  style={sansSaisie ? { backgroundColor: couleurs.horsTravail } : undefined}
                                 >
                                   <button
                                     type="button"
@@ -490,27 +528,61 @@ function formatNombre(n: number) {
   return n === 0 ? "—" : String(n).replace(".", ",");
 }
 
-function Legende() {
-  const validee = TYPES_ABSENCE.find((t) => t.value === "conge_valide");
-  const previsionnelle = TYPES_ABSENCE.find((t) => t.value === "conge_previsionnel");
+function Legende({
+  couleurs,
+  definirCouleur,
+}: {
+  couleurs: Record<CleCouleur, string>;
+  definirCouleur: (cle: CleCouleur, valeur: string) => void;
+}) {
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
       <span className="flex items-center gap-1.5">
-        <span className="inline-block size-3 rounded-sm border" style={{ backgroundColor: validee?.couleur }} />
+        <SelecteurCouleur
+          valeur={couleurs.conge_valide}
+          onChange={(v) => definirCouleur("conge_valide", v)}
+          titre="Choisir la couleur des congés validés"
+        />
         Congé validé
       </span>
       <span className="flex items-center gap-1.5">
-        <span
-          className="inline-block size-3 rounded-sm border"
-          style={{ backgroundColor: previsionnelle?.couleur }}
+        <SelecteurCouleur
+          valeur={couleurs.conge_previsionnel}
+          onChange={(v) => definirCouleur("conge_previsionnel", v)}
+          titre="Choisir la couleur des congés non validés"
         />
         Congé non validé
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="inline-block size-3 rounded-sm border bg-muted" /> Week-end / férié /
-        fermeture
+        <SelecteurCouleur
+          valeur={couleurs.horsTravail}
+          onChange={(v) => definirCouleur("horsTravail", v)}
+          titre="Choisir la couleur des week-ends / fériés / fermetures"
+        />
+        Week-end / férié / fermeture
       </span>
       <span>vide = travaillé · 0,5 = demi-journée · 0 = congé</span>
     </div>
+  );
+}
+
+function SelecteurCouleur({
+  valeur,
+  onChange,
+  titre,
+}: {
+  valeur: string;
+  onChange: (valeur: string) => void;
+  titre: string;
+}) {
+  return (
+    <input
+      type="color"
+      value={valeur}
+      onChange={(e) => onChange(e.target.value)}
+      title={titre}
+      aria-label={titre}
+      className="size-4 cursor-pointer rounded-sm border p-0 [&::-webkit-color-swatch]:rounded-[2px] [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch-wrapper]:p-0"
+    />
   );
 }
