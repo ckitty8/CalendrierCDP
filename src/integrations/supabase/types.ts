@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      capacite_sprint: {
+        Row: {
+          created_at: string
+          id: string
+          jours: number
+          membre_id: string
+          sprint: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jours: number
+          membre_id: string
+          sprint: number
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jours?: number
+          membre_id?: string
+          sprint?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capacite_sprint_membre_id_fkey"
+            columns: ["membre_id"]
+            isOneToOne: false
+            referencedRelation: "membres"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipes: {
         Row: {
           couleur: string

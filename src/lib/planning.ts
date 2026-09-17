@@ -19,6 +19,10 @@ export type Jour = {
   commentaire: string | null;
 };
 export type JourSpecial = { id: string; date: string; libelle: string; type: string };
+export type TypeCapacite = "reel" | "previsionnel";
+export type CapaciteSprint = { id: string; membre_id: string; type: TypeCapacite; sprint: number; jours: number };
+
+export const SPRINTS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 export type TypeAbsence =
   | "non_classe"
@@ -150,4 +154,13 @@ export async function enregistrerJour(
 export async function enregistrerJoursTravaillesClient(membre_id: string, valeur: number | null) {
   const { error } = await supabase.from("membres").update({ jours_travailles_client: valeur }).eq("id", membre_id);
   if (error) throw error;
+}
+
+// Capacité/vélocité d'équipe par sprint (jours-homme), reprise des feuilles
+// Excel "Capa_Sprint_Réel" / "Capa_Sprint_prévisionnel" — affichage seul,
+// pas de saisie dans l'app pour l'instant.
+export async function chargerCapaciteSprint() {
+  const { data, error } = await supabase.from("capacite_sprint").select("*");
+  if (error) throw error;
+  return (data ?? []) as CapaciteSprint[];
 }

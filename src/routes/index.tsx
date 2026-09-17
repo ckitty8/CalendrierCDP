@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronLeft, ChevronRight, Settings2, Users } from "luci
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 import {
+  chargerCapaciteSprint,
   chargerJours,
   chargerReferentiel,
   enregistrerJour,
@@ -24,9 +26,13 @@ import {
   joursDuMois,
   MOIS,
   MOIS_COURTS,
+  SPRINTS,
   TYPES_ABSENCE,
   valeurEffective,
+  type CapaciteSprint,
+  type Membre,
   type TypeAbsence,
+  type TypeCapacite,
 } from "@/lib/planning";
 
 export const Route = createFileRoute("/")({
@@ -56,9 +62,33 @@ function Planning() {
   const [mois, setMois] = useState(0);
   const [equipeFiltre, setEquipeFiltre] = useState<string>("toutes");
   const [celluleActive, setCelluleActive] = useState<{ membreId: string; date: string } | null>(null);
+  const [afficherCapacite, setAfficherCapacite] = useState(false);
+
+  // Lu après le montage pour éviter un écart entre le rendu serveur et client.
+  useEffect(() => {
+    try {
+      setAfficherCapacite(window.localStorage.getItem("planning-afficher-capacite") === "1");
+    } catch {
+      // localStorage indisponible : on garde la valeur par défaut (masquée).
+    }
+  }, []);
+
+  const changerAffichageCapacite = (valeur: boolean) => {
+    setAfficherCapacite(valeur);
+    try {
+      window.localStorage.setItem("planning-afficher-capacite", valeur ? "1" : "0");
+    } catch {
+      // idem
+    }
+  };
 
   const referentiel = useQuery({ queryKey: ["referentiel"], queryFn: chargerReferentiel });
   const jours = useQuery({ queryKey: ["jours", annee], queryFn: () => chargerJours(annee) });
+  const capacite = useQuery({
+    queryKey: ["capacite"],
+    queryFn: chargerCapaciteSprint,
+    enabled: afficherCapacite,
+  });
 
   const mutation = useMutation({
     mutationFn: (v: {
@@ -240,6 +270,7 @@ function Planning() {
               <TabsList>
                 <TabsTrigger value="planning">Planning</TabsTrigger>
                 <TabsTrigger value="conges">Jours de congés</TabsTrigger>
+                {afficherCapacite && <TabsTrigger value="capacite">Capacité</TabsTrigger>}
               </TabsList>
 
               <Select value={equipeFiltre} onValueChange={setEquipeFiltre}>
@@ -255,6 +286,14 @@ function Planning() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <label className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+                <Checkbox
+                  checked={afficherCapacite}
+                  onCheckedChange={(v) => changerAffichageCapacite(v === true)}
+                />
+                Afficher la capacité/vélocité d&apos;équipe
+              </label>
             </div>
 
             <TabsContent value="planning">
@@ -508,6 +547,41 @@ function Planning() {
                 </div>
               </div>
             </TabsContent>
+
+            {afficherCapacite && (
+              <TabsContent value="capacite">
+                <div className="rounded-lg border bg-card">
+                  <div className="px-4 py-3">
+                    <h2 className="text-sm font-semibold">Capacité / vélocité d&apos;équipe</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Jours-homme par sprint, repris du fichier Excel (feuilles Capa_Sprint).
+                    </p>
+                  </div>
+                  {capacite.isLoading ? (
+                    <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
+                  ) : capacite.isError ? (
+                    <p className="px-4 py-6 text-sm text-destructive">
+                      Impossible de charger la capacité : {(capacite.error as Error).message}
+                    </p>
+                  ) : (
+                    <>
+                      <TableauCapacite
+                        titre="Réel"
+                        type="reel"
+                        membres={membres}
+                        donnees={capacite.data ?? []}
+                      />
+                      <TableauCapacite
+                        titre="Prévisionnel"
+                        type="previsionnel"
+                        membres={membres}
+                        donnees={capacite.data ?? []}
+                      />
+                    </>
+                  )}
+                </div>
+              </TabsContent>
+            )}
           </Tabs>
         )}
       </div>
@@ -668,5 +742,100 @@ function SaisieJoursClient({
       title="Nombre de jours total travaillé client"
       className="h-8 w-full border-0 bg-transparent text-center font-mono text-xs outline-none placeholder:text-muted-foreground"
     />
+  );
+}
+
+// Table capacité/vélocité (jours-homme par sprint) pour un type donné
+// (réel ou prévisionnel), avec une ligne Total équipe.
+function TableauCapacite({
+  titre,
+  type,
+  membres,
+  donnees,
+}: {
+  titre: string;
+  type: TypeCapacite;
+  membres: Membre[];
+  donnees: CapaciteSprint[];
+}) {
+  const parMembre = useMemo(() => {
+    const map = new Map<string, number[]>();
+    for (const c of donnees) {
+      if (c.type !== type) continue;
+      if (!map.has(c.membre_id)) map.set(c.membre_id, Array(12).fill(0));
+      map.get(c.membre_id)![c.sprint - 1] = c.jours;
+    }
+    return map;
+  }, [donnees, type]);
+
+  const membresConcernes = membres.filter((m) => parMembre.has(m.id));
+  if (membresConcernes.length === 0) {
+    return (
+      <p className="px-4 py-4 text-xs text-muted-foreground">
+        Aucune donnée « {titre} » disponible.
+      </p>
+    );
+  }
+
+  const totalParSprint = Array(12).fill(0);
+  for (const m of membresConcernes) {
+    parMembre.get(m.id)!.forEach((v, i) => {
+      totalParSprint[i] += v;
+    });
+  }
+
+  return (
+    <div className="border-t">
+      <h3 className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {titre}
+      </h3>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr>
+              <th className="sticky left-0 z-10 min-w-48 border-b bg-card px-3 py-2 text-left font-medium">
+                Personne
+              </th>
+              {SPRINTS.map((s) => (
+                <th key={s} className="border-b border-l px-2 py-1 text-center font-medium">
+                  Sprint {s}
+                </th>
+              ))}
+              <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {membresConcernes.map((m) => {
+              const valeurs = parMembre.get(m.id)!;
+              const total = valeurs.reduce((s, v) => s + v, 0);
+              return (
+                <tr key={m.id} className="hover:bg-accent/40">
+                  <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">{m.nom}</td>
+                  {valeurs.map((v, i) => (
+                    <td key={i} className="border-b border-l px-2 py-1 text-center font-mono">
+                      {formatNombre(v)}
+                    </td>
+                  ))}
+                  <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                    {formatNombre(total)}
+                  </td>
+                </tr>
+              );
+            })}
+            <tr className="bg-muted/60 font-semibold">
+              <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">Total équipe</td>
+              {totalParSprint.map((v, i) => (
+                <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+                  {formatNombre(v)}
+                </td>
+              ))}
+              <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+                {formatNombre(totalParSprint.reduce((s, v) => s + v, 0))}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
