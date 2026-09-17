@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -54,13 +54,22 @@ function Planning() {
   const [annee, setAnnee] = useState(ANNEE_DEFAUT);
   const [mois, setMois] = useState(0);
   const [equipeFiltre, setEquipeFiltre] = useState<string>("toutes");
-  // Sélection multiple façon tableur : clic simple = une case, Maj+clic =
-  // plage depuis l'ancre, Ctrl/Cmd+clic = ajoute/retire une case.
-  const [selection, setSelection] = useState<Set<string>>(new Set());
-  const [ancre, setAncre] = useState<{ membreId: string; date: string } | null>(null);
+  const [celluleActive, setCelluleActive] = useState<{ membreId: string; date: string } | null>(null);
 
   const referentiel = useQuery({ queryKey: ["referentiel"], queryFn: chargerReferentiel });
   const jours = useQuery({ queryKey: ["jours", annee], queryFn: () => chargerJours(annee) });
+
+  const mutation = useMutation({
+    mutationFn: (v: {
+      membre_id: string;
+      date: string;
+      valeur: number;
+      type: TypeAbsence;
+      special: boolean;
+    }) => enregistrerJour(v.membre_id, v.date, v.valeur, v.type, v.special),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["jours", annee] }),
+    onError: (e: Error) => toast.error("Enregistrement impossible : " + e.message),
+  });
 
   const colonnes = useMemo(() => joursDuMois(annee, mois), [annee, mois]);
 
@@ -83,10 +92,6 @@ function Planning() {
   const groupes = equipes
     .filter((e) => equipeFiltre === "toutes" || e.id === equipeFiltre)
     .map((e) => ({ equipe: e, membres: membres.filter((m) => m.equipe_id === e.id) }));
-
-  // Ordre d'affichage réel (mêmes lignes que le tableau), utilisé pour
-  // calculer les plages de sélection Maj+clic.
-  const membresAffiches = useMemo(() => groupes.flatMap((g) => g.membres), [groupes]);
 
   // Bilan mensuel travaillé/non travaillé par personne, du lundi au vendredi,
   // calculé à partir du planning : un jour férié/fermeture sans saisie compte
@@ -140,96 +145,26 @@ function Planning() {
 
   // Enregistre la valeur tapée au clavier (0, 0,5 ou vide = travaillé), en
   // conservant le type/couleur déjà présent sur la case le cas échéant.
-  // Si la case modifiée fait partie d'une sélection multiple, la valeur
-  // tapée s'applique à toutes les cases sélectionnées (chacune garde son
-  // propre type/couleur existant, ou "non_classe" si elle n'en a pas).
-  async function commitValeur(membreId: string, date: string, valeur: number, special: boolean) {
-    const cle = cleCellule(membreId, date);
-    const cibles = selection.has(cle) && selection.size > 1 ? [...selection] : [cle];
-    try {
-      await Promise.all(
-        cibles.map((c) => {
-          const [mId, d] = c.split("|") as [string, string];
-          const actuel = saisies.get(c);
-          const type: TypeAbsence = actuel?.type ?? "non_classe";
-          return enregistrerJour(mId, d, valeur, type, speciaux.has(d));
-        }),
-      );
-      queryClient.invalidateQueries({ queryKey: ["jours", annee] });
-    } catch (e) {
-      toast.error("Enregistrement impossible : " + (e as Error).message);
-    }
+  function commitValeur(membreId: string, date: string, valeur: number, special: boolean) {
+    const actuel = saisies.get(`${membreId}|${date}`);
+    const type: TypeAbsence = actuel?.type ?? "non_classe";
+    mutation.mutate({ membre_id: membreId, date, valeur, type, special });
   }
 
-  function cleCellule(membreId: string, date: string) {
-    return `${membreId}|${date}`;
-  }
-
-  // Clic simple = ne sélectionne que cette case (et devient la nouvelle
-  // ancre). Ctrl/Cmd+clic = ajoute/retire cette case de la sélection.
-  // Maj+clic = sélectionne le rectangle entre l'ancre et cette case.
-  function selectionnerCellule(membreId: string, date: string, e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }) {
-    if (e.shiftKey && ancre) {
-      const ligneAncre = membresAffiches.findIndex((m) => m.id === ancre.membreId);
-      const ligneCible = membresAffiches.findIndex((m) => m.id === membreId);
-      const colAncre = colonnes.findIndex((c) => c.date === ancre.date);
-      const colCible = colonnes.findIndex((c) => c.date === date);
-      if (ligneAncre === -1 || ligneCible === -1 || colAncre === -1 || colCible === -1) return;
-      const [ligneMin, ligneMax] = [Math.min(ligneAncre, ligneCible), Math.max(ligneAncre, ligneCible)];
-      const [colMin, colMax] = [Math.min(colAncre, colCible), Math.max(colAncre, colCible)];
-      const plage = new Set<string>();
-      for (let li = ligneMin; li <= ligneMax; li++) {
-        for (let ci = colMin; ci <= colMax; ci++) {
-          const m = membresAffiches[li];
-          const c = colonnes[ci];
-          if (m && c) plage.add(cleCellule(m.id, c.date));
-        }
-      }
-      setSelection(plage);
+  // Applique une couleur (congé validé/non validé) à la case actuellement
+  // sélectionnée (dernière case cliquée/tapée), sans changer sa valeur.
+  function appliquerType(type: TypeAbsence) {
+    if (!celluleActive) {
+      toast.error("Cliquez d'abord sur une case du planning.");
       return;
     }
-    if (e.ctrlKey || e.metaKey) {
-      const cle = cleCellule(membreId, date);
-      setSelection((prev) => {
-        const next = new Set(prev);
-        if (next.has(cle)) next.delete(cle);
-        else next.add(cle);
-        return next;
-      });
-      setAncre({ membreId, date });
+    const s = saisies.get(`${celluleActive.membreId}|${celluleActive.date}`);
+    if (!s) {
+      toast.error("Saisissez d'abord une valeur (0 ou 0,5) dans la case.");
       return;
     }
-    setSelection(new Set([cleCellule(membreId, date)]));
-    setAncre({ membreId, date });
-  }
-
-  // Applique une couleur (congé validé/non validé) à toutes les cases
-  // sélectionnées qui ont déjà une valeur, sans changer leur valeur.
-  async function appliquerType(type: TypeAbsence) {
-    if (selection.size === 0) {
-      toast.error("Sélectionnez d'abord une ou plusieurs cases.");
-      return;
-    }
-    const cibles = [...selection]
-      .map((cle) => {
-        const s = saisies.get(cle);
-        if (!s) return null;
-        const [membreId, date] = cle.split("|") as [string, string];
-        return { membreId, date, valeur: s.valeur, special: speciaux.has(date) };
-      })
-      .filter((v): v is { membreId: string; date: string; valeur: number; special: boolean } => v !== null);
-    if (cibles.length === 0) {
-      toast.error("Saisissez d'abord une valeur (0 ou 0,5) dans la ou les cases sélectionnées.");
-      return;
-    }
-    try {
-      await Promise.all(
-        cibles.map((c) => enregistrerJour(c.membreId, c.date, c.valeur, type, c.special)),
-      );
-      queryClient.invalidateQueries({ queryKey: ["jours", annee] });
-    } catch (e) {
-      toast.error("Enregistrement impossible : " + (e as Error).message);
-    }
+    const special = speciaux.has(celluleActive.date);
+    mutation.mutate({ membre_id: celluleActive.membreId, date: celluleActive.date, valeur: s.valeur, type, special });
   }
 
   const naviguer = (delta: number) => {
@@ -324,29 +259,14 @@ function Planning() {
 
                 <p className="text-xs text-muted-foreground">
                   Cliquez sur une case et tapez 0 (congé) ou 0,5 (demi-journée) au clavier — laissez
-                  vide pour travaillé. Maj+clic sélectionne une plage, Ctrl/Cmd+clic ajoute une case,
-                  Ctrl/Cmd+A sélectionne tout, Échap désélectionne. Puis cliquez sur « Congé validé »
-                  ou « Congé non validé » ci-dessous pour colorer la sélection.
+                  vide pour travaillé. Puis cliquez sur « Congé validé » ou « Congé non validé »
+                  ci-dessous pour colorer la case sélectionnée.
                 </p>
               </div>
 
               <Legende onAppliquer={appliquerType} />
 
-              <div
-                className="mt-4 overflow-x-auto rounded-lg border bg-card"
-                onKeyDown={(e) => {
-                  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
-                    e.preventDefault();
-                    const toutes = new Set<string>();
-                    for (const m of membresAffiches) {
-                      for (const c of colonnes) toutes.add(cleCellule(m.id, c.date));
-                    }
-                    setSelection(toutes);
-                  } else if (e.key === "Escape") {
-                    setSelection(ancre ? new Set([cleCellule(ancre.membreId, ancre.date)]) : new Set());
-                  }
-                }}
-              >
+              <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
                 <table className="w-full border-collapse text-sm">
                   <thead>
                     <tr>
@@ -408,7 +328,8 @@ function Planning() {
                               const sp = speciaux.get(c.date);
                               const s = saisies.get(`${m.id}|${c.date}`);
                               const sansSaisie = !s && (estWeekend(c.dow) || !!sp);
-                              const estSelectionnee = selection.has(cleCellule(m.id, c.date));
+                              const estActive =
+                                celluleActive?.membreId === m.id && celluleActive?.date === c.date;
                               return (
                                 <td
                                   key={c.date}
@@ -418,13 +339,8 @@ function Planning() {
                                     saisie={s}
                                     special={!!sp}
                                     titre={sp ? sp.libelle : `${m.nom} — ${c.date}`}
-                                    selectionnee={estSelectionnee}
-                                    partieSelectionMultiple={estSelectionnee && selection.size > 1}
-                                    onSelectionner={(e) => selectionnerCellule(m.id, c.date, e)}
-                                    onFocusCell={() => {
-                                      setSelection(new Set([cleCellule(m.id, c.date)]));
-                                      setAncre({ membreId: m.id, date: c.date });
-                                    }}
+                                    active={estActive}
+                                    onFocusCell={() => setCelluleActive({ membreId: m.id, date: c.date })}
                                     onCommit={(valeur) => commitValeur(m.id, c.date, valeur, !!sp)}
                                   />
                                 </td>
@@ -602,18 +518,14 @@ function CelluleValeur({
   saisie,
   special,
   titre,
-  selectionnee,
-  partieSelectionMultiple,
-  onSelectionner,
+  active,
   onFocusCell,
   onCommit,
 }: {
   saisie: { valeur: number; type: TypeAbsence } | undefined;
   special: boolean;
   titre: string;
-  selectionnee: boolean;
-  partieSelectionMultiple: boolean;
-  onSelectionner: (e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }) => void;
+  active: boolean;
   onFocusCell: () => void;
   onCommit: (valeur: number) => void;
 }) {
@@ -635,12 +547,11 @@ function CelluleValeur({
     else if (brut === "0.5") valeur = 0.5;
     else if (brut === "1") valeur = 1;
     if (valeur === null) {
-      if (texte !== affichage) toast.error("Valeur invalide : tapez 0, 0,5, ou laissez vide (travaillé).");
       setTexte(affichage);
       return;
     }
     const valeurActuelle = saisie ? saisie.valeur : 1;
-    if (valeur === valeurActuelle && !partieSelectionMultiple) return;
+    if (valeur === valeurActuelle) return;
     onCommit(valeur);
   };
 
@@ -650,16 +561,7 @@ function CelluleValeur({
       inputMode="decimal"
       value={texte}
       onChange={(e) => setTexte(e.target.value)}
-      onMouseDown={(e) => {
-        if (e.shiftKey || e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          onSelectionner({ shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey });
-        }
-      }}
-      onFocus={(e) => {
-        onFocusCell();
-        e.target.select();
-      }}
+      onFocus={onFocusCell}
       onBlur={valider}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
@@ -671,7 +573,7 @@ function CelluleValeur({
       title={titre}
       className={`h-8 w-full border-0 bg-transparent text-center font-mono text-xs outline-none ${
         saisie ? "font-semibold" : special ? "placeholder:text-muted-foreground" : ""
-      } ${selectionnee ? "ring-2 ring-inset ring-ring" : ""}`}
+      } ${active ? "ring-2 ring-inset ring-ring" : ""}`}
       style={couleur ? { backgroundColor: couleur, color: "oklch(0.2 0 0)" } : undefined}
     />
   );
