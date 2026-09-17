@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -61,18 +61,6 @@ function Planning() {
 
   const referentiel = useQuery({ queryKey: ["referentiel"], queryFn: chargerReferentiel });
   const jours = useQuery({ queryKey: ["jours", annee], queryFn: () => chargerJours(annee) });
-
-  const mutation = useMutation({
-    mutationFn: (v: {
-      membre_id: string;
-      date: string;
-      valeur: number;
-      type: TypeAbsence;
-      special: boolean;
-    }) => enregistrerJour(v.membre_id, v.date, v.valeur, v.type, v.special),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["jours", annee] }),
-    onError: (e: Error) => toast.error("Enregistrement impossible : " + e.message),
-  });
 
   const colonnes = useMemo(() => joursDuMois(annee, mois), [annee, mois]);
 
@@ -152,10 +140,25 @@ function Planning() {
 
   // Enregistre la valeur tapée au clavier (0, 0,5 ou vide = travaillé), en
   // conservant le type/couleur déjà présent sur la case le cas échéant.
-  function commitValeur(membreId: string, date: string, valeur: number, special: boolean) {
-    const actuel = saisies.get(`${membreId}|${date}`);
-    const type: TypeAbsence = actuel?.type ?? "non_classe";
-    mutation.mutate({ membre_id: membreId, date, valeur, type, special });
+  // Si la case modifiée fait partie d'une sélection multiple, la valeur
+  // tapée s'applique à toutes les cases sélectionnées (chacune garde son
+  // propre type/couleur existant, ou "non_classe" si elle n'en a pas).
+  async function commitValeur(membreId: string, date: string, valeur: number, special: boolean) {
+    const cle = cleCellule(membreId, date);
+    const cibles = selection.has(cle) && selection.size > 1 ? [...selection] : [cle];
+    try {
+      await Promise.all(
+        cibles.map((c) => {
+          const [mId, d] = c.split("|") as [string, string];
+          const actuel = saisies.get(c);
+          const type: TypeAbsence = actuel?.type ?? "non_classe";
+          return enregistrerJour(mId, d, valeur, type, speciaux.has(d));
+        }),
+      );
+      queryClient.invalidateQueries({ queryKey: ["jours", annee] });
+    } catch (e) {
+      toast.error("Enregistrement impossible : " + (e as Error).message);
+    }
   }
 
   function cleCellule(membreId: string, date: string) {
@@ -416,6 +419,7 @@ function Planning() {
                                     special={!!sp}
                                     titre={sp ? sp.libelle : `${m.nom} — ${c.date}`}
                                     selectionnee={estSelectionnee}
+                                    partieSelectionMultiple={estSelectionnee && selection.size > 1}
                                     onSelectionner={(e) => selectionnerCellule(m.id, c.date, e)}
                                     onFocusCell={() => {
                                       setSelection(new Set([cleCellule(m.id, c.date)]));
@@ -599,6 +603,7 @@ function CelluleValeur({
   special,
   titre,
   selectionnee,
+  partieSelectionMultiple,
   onSelectionner,
   onFocusCell,
   onCommit,
@@ -607,6 +612,7 @@ function CelluleValeur({
   special: boolean;
   titre: string;
   selectionnee: boolean;
+  partieSelectionMultiple: boolean;
   onSelectionner: (e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }) => void;
   onFocusCell: () => void;
   onCommit: (valeur: number) => void;
@@ -633,7 +639,7 @@ function CelluleValeur({
       return;
     }
     const valeurActuelle = saisie ? saisie.valeur : 1;
-    if (valeur === valeurActuelle) return;
+    if (valeur === valeurActuelle && !partieSelectionMultiple) return;
     onCommit(valeur);
   };
 
