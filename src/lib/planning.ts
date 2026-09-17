@@ -19,10 +19,8 @@ export type Jour = {
   commentaire: string | null;
 };
 export type JourSpecial = { id: string; date: string; libelle: string; type: string };
-export type TypeCapacite = "reel" | "previsionnel";
-export type CapaciteSprint = { id: string; membre_id: string; type: TypeCapacite; sprint: number; jours: number };
-
-export const SPRINTS = Array.from({ length: 12 }, (_, i) => i + 1);
+export type Sprint = { id: string; nom: string; date_debut: string; date_fin: string; ordre: number };
+export type TacheRepartition = { id: string; nom: string; pourcentage: number; ordre: number };
 
 export type TypeAbsence =
   | "non_classe"
@@ -156,11 +154,76 @@ export async function enregistrerJoursTravaillesClient(membre_id: string, valeur
   if (error) throw error;
 }
 
-// Capacité/vélocité d'équipe par sprint (jours-homme), reprise des feuilles
-// Excel "Capa_Sprint_Réel" / "Capa_Sprint_prévisionnel" — affichage seul,
-// pas de saisie dans l'app pour l'instant.
-export async function chargerCapaciteSprint() {
-  const { data, error } = await supabase.from("capacite_sprint").select("*");
+export async function chargerSprints() {
+  const { data, error } = await supabase.from("sprints").select("*").order("ordre");
   if (error) throw error;
-  return (data ?? []) as CapaciteSprint[];
+  return (data ?? []) as Sprint[];
+}
+
+export async function ajouterSprint(sprint: { nom: string; date_debut: string; date_fin: string; ordre: number }) {
+  const { data, error } = await supabase.from("sprints").insert(sprint).select().single();
+  if (error) throw error;
+  return data as Sprint;
+}
+
+export async function modifierSprint(
+  id: string,
+  champs: Partial<Pick<Sprint, "nom" | "date_debut" | "date_fin">>,
+) {
+  const { error } = await supabase.from("sprints").update(champs).eq("id", id);
+  if (error) throw error;
+}
+
+export async function supprimerSprint(id: string) {
+  const { error } = await supabase.from("sprints").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function chargerRepartitionTaches() {
+  const { data, error } = await supabase.from("repartition_taches").select("*").order("ordre");
+  if (error) throw error;
+  return (data ?? []) as TacheRepartition[];
+}
+
+export async function modifierPourcentageTache(id: string, pourcentage: number) {
+  const { error } = await supabase.from("repartition_taches").update({ pourcentage }).eq("id", id);
+  if (error) throw error;
+}
+
+// Nombre de jours ouvrés (hors week-ends et jours fériés/fermeture) sur une
+// période [dateDebut, dateFin] incluse.
+export function joursOuvresPeriode(dateDebut: string, dateFin: string, speciaux: Pick<JourSpecial, "date">[]) {
+  const joursSpeciaux = new Set(speciaux.map((s) => s.date));
+  let n = 0;
+  const curseur = new Date(`${dateDebut}T00:00:00`);
+  const fin = new Date(`${dateFin}T00:00:00`);
+  while (curseur <= fin) {
+    const d = iso(curseur.getFullYear(), curseur.getMonth(), curseur.getDate());
+    if (!estWeekend(curseur.getDay()) && !joursSpeciaux.has(d)) n++;
+    curseur.setDate(curseur.getDate() + 1);
+  }
+  return n;
+}
+
+export type DetailCapacite = { joursOuvres: number; congesValides: number; capacite: number };
+
+// Capacité d'une personne sur une période (ex. un sprint) : jours ouvrés de
+// la période, moins les congés validés (type "conge_valide") saisis dans le
+// planning sur cette même période.
+export function calculerCapacite(
+  membreId: string,
+  dateDebut: string,
+  dateFin: string,
+  jours: Pick<Jour, "membre_id" | "date" | "valeur" | "type">[],
+  speciaux: Pick<JourSpecial, "date">[],
+): DetailCapacite {
+  const joursOuvres = joursOuvresPeriode(dateDebut, dateFin, speciaux);
+  let congesValides = 0;
+  for (const j of jours) {
+    if (j.membre_id !== membreId) continue;
+    if (j.type !== "conge_valide") continue;
+    if (j.date < dateDebut || j.date > dateFin) continue;
+    congesValides += 1 - Number(j.valeur);
+  }
+  return { joursOuvres, congesValides, capacite: joursOuvres - congesValides };
 }

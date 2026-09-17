@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ChevronLeft, ChevronRight, Settings2, Users } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Plus, Settings2, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -16,23 +16,32 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 import {
-  chargerCapaciteSprint,
+  ajouterSprint,
+  calculerCapacite,
   chargerJours,
   chargerReferentiel,
+  chargerRepartitionTaches,
+  chargerSprints,
   enregistrerJour,
   enregistrerJoursTravaillesClient,
   estWeekend,
+  iso,
   JOURS_COURTS,
   joursDuMois,
+  modifierPourcentageTache,
+  modifierSprint,
   MOIS,
   MOIS_COURTS,
-  SPRINTS,
+  supprimerSprint,
   TYPES_ABSENCE,
   valeurEffective,
-  type CapaciteSprint,
+  type DetailCapacite,
+  type Jour,
+  type JourSpecial,
   type Membre,
+  type Sprint,
+  type TacheRepartition,
   type TypeAbsence,
-  type TypeCapacite,
 } from "@/lib/planning";
 
 export const Route = createFileRoute("/")({
@@ -84,9 +93,14 @@ function Planning() {
 
   const referentiel = useQuery({ queryKey: ["referentiel"], queryFn: chargerReferentiel });
   const jours = useQuery({ queryKey: ["jours", annee], queryFn: () => chargerJours(annee) });
-  const capacite = useQuery({
-    queryKey: ["capacite"],
-    queryFn: chargerCapaciteSprint,
+  const sprintsQuery = useQuery({
+    queryKey: ["sprints"],
+    queryFn: chargerSprints,
+    enabled: afficherCapacite,
+  });
+  const repartitionQuery = useQuery({
+    queryKey: ["repartition-taches"],
+    queryFn: chargerRepartitionTaches,
     enabled: afficherCapacite,
   });
 
@@ -107,6 +121,31 @@ function Planning() {
       enregistrerJoursTravaillesClient(v.membre_id, v.valeur),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["referentiel"] }),
     onError: (e: Error) => toast.error("Enregistrement impossible : " + e.message),
+  });
+
+  const mutationAjouterSprint = useMutation({
+    mutationFn: ajouterSprint,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sprints"] }),
+    onError: (e: Error) => toast.error("Ajout du sprint impossible : " + e.message),
+  });
+
+  const mutationModifierSprint = useMutation({
+    mutationFn: (v: { id: string; champs: Partial<Pick<Sprint, "nom" | "date_debut" | "date_fin">> }) =>
+      modifierSprint(v.id, v.champs),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sprints"] }),
+    onError: (e: Error) => toast.error("Modification du sprint impossible : " + e.message),
+  });
+
+  const mutationSupprimerSprint = useMutation({
+    mutationFn: supprimerSprint,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sprints"] }),
+    onError: (e: Error) => toast.error("Suppression du sprint impossible : " + e.message),
+  });
+
+  const mutationPourcentageTache = useMutation({
+    mutationFn: (v: { id: string; pourcentage: number }) => modifierPourcentageTache(v.id, v.pourcentage),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["repartition-taches"] }),
+    onError: (e: Error) => toast.error("Modification impossible : " + e.message),
   });
 
   const colonnes = useMemo(() => joursDuMois(annee, mois), [annee, mois]);
@@ -130,6 +169,7 @@ function Planning() {
   const groupes = equipes
     .filter((e) => equipeFiltre === "toutes" || e.id === equipeFiltre)
     .map((e) => ({ equipe: e, membres: membres.filter((m) => m.equipe_id === e.id) }));
+  const membresFiltres = groupes.flatMap((g) => g.membres);
 
   // Bilan mensuel travaillé/non travaillé par personne, du lundi au vendredi,
   // calculé à partir du planning : un jour férié/fermeture sans saisie compte
@@ -550,35 +590,96 @@ function Planning() {
 
             {afficherCapacite && (
               <TabsContent value="capacite">
-                <div className="rounded-lg border bg-card">
-                  <div className="px-4 py-3">
-                    <h2 className="text-sm font-semibold">Capacité / vélocité d&apos;équipe</h2>
-                    <p className="text-xs text-muted-foreground">
-                      Jours-homme par sprint, repris du fichier Excel (feuilles Capa_Sprint).
-                    </p>
+                <div className="space-y-4">
+                  <SectionSprints
+                    sprints={sprintsQuery.data ?? []}
+                    isLoading={sprintsQuery.isLoading}
+                    isError={sprintsQuery.isError}
+                    error={sprintsQuery.error as Error | null}
+                    onAjouter={() => {
+                      const dernier = (sprintsQuery.data ?? [])[(sprintsQuery.data?.length ?? 1) - 1];
+                      const ordre = (sprintsQuery.data?.length ?? 0) + 1;
+                      const debut = dernier ? lendemain(dernier.date_fin) : iso(annee, 0, 1);
+                      mutationAjouterSprint.mutate({ nom: `Sprint ${ordre}`, date_debut: debut, date_fin: debut, ordre });
+                    }}
+                    onModifier={(id, champs) => mutationModifierSprint.mutate({ id, champs })}
+                    onSupprimer={(id) => mutationSupprimerSprint.mutate(id)}
+                  />
+
+                  <div className="rounded-lg border bg-card">
+                    <div className="px-4 py-3">
+                      <h2 className="text-sm font-semibold">Capacité par sprint</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Jours-homme disponibles par personne, sur la période de chaque sprint.
+                      </p>
+                    </div>
+                    {sprintsQuery.isLoading || jours.isLoading ? (
+                      <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
+                    ) : (sprintsQuery.data?.length ?? 0) === 0 ? (
+                      <p className="px-4 py-6 text-sm text-muted-foreground">
+                        Aucun sprint défini. Ajoutez-en un ci-dessus.
+                      </p>
+                    ) : (
+                      <TableauCapacite
+                        membres={membresFiltres}
+                        sprints={sprintsQuery.data ?? []}
+                        jours={jours.data ?? []}
+                        speciaux={referentiel.data?.speciaux ?? []}
+                      />
+                    )}
+                    <div className="border-t px-4 py-3 text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">Comment est calculée la capacité ?</p>
+                      <p className="mt-1">
+                        Capacité = jours ouvrés de la période du sprint (hors week-ends et jours
+                        fériés/fermeture) − jours de congé validés saisis dans le planning sur cette
+                        même période. Survolez une case du tableau pour voir le détail du calcul.
+                      </p>
+                    </div>
                   </div>
-                  {capacite.isLoading ? (
-                    <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
-                  ) : capacite.isError ? (
-                    <p className="px-4 py-6 text-sm text-destructive">
-                      Impossible de charger la capacité : {(capacite.error as Error).message}
-                    </p>
-                  ) : (
-                    <>
-                      <TableauCapacite
-                        titre="Réel"
-                        type="reel"
-                        membres={membres}
-                        donnees={capacite.data ?? []}
+
+                  <div className="rounded-lg border bg-card">
+                    <div className="px-4 py-3">
+                      <h2 className="text-sm font-semibold">Répartition des tâches</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Part de la capacité totale de l&apos;équipe consacrée à chaque type de tâche.
+                      </p>
+                    </div>
+                    {repartitionQuery.isLoading ? (
+                      <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
+                    ) : (
+                      <TableauRepartition
+                        taches={repartitionQuery.data ?? []}
+                        onModifierPourcentage={(id, pourcentage) =>
+                          mutationPourcentageTache.mutate({ id, pourcentage })
+                        }
                       />
-                      <TableauCapacite
-                        titre="Prévisionnel"
-                        type="previsionnel"
-                        membres={membres}
-                        donnees={capacite.data ?? []}
+                    )}
+                  </div>
+
+                  <div className="rounded-lg border bg-card">
+                    <div className="px-4 py-3">
+                      <h2 className="text-sm font-semibold">Chiffrage par sprint (jours-homme)</h2>
+                      <p className="text-xs text-muted-foreground">
+                        Pour chaque type de tâche : % de répartition × capacité totale de l&apos;équipe
+                        sur le sprint.
+                      </p>
+                    </div>
+                    {sprintsQuery.isLoading || repartitionQuery.isLoading || jours.isLoading ? (
+                      <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
+                    ) : (sprintsQuery.data?.length ?? 0) === 0 ? (
+                      <p className="px-4 py-6 text-sm text-muted-foreground">
+                        Aucun sprint défini.
+                      </p>
+                    ) : (
+                      <TableauTachesParSprint
+                        taches={repartitionQuery.data ?? []}
+                        sprints={sprintsQuery.data ?? []}
+                        membres={membresFiltres}
+                        jours={jours.data ?? []}
+                        speciaux={referentiel.data?.speciaux ?? []}
                       />
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               </TabsContent>
             )}
@@ -590,7 +691,13 @@ function Planning() {
 }
 
 function formatNombre(n: number) {
-  return n === 0 ? "—" : String(n).replace(".", ",");
+  return n === 0 ? "—" : String(Math.round(n * 100) / 100).replace(".", ",");
+}
+
+function lendemain(date: string) {
+  const d = new Date(`${date}T00:00:00`);
+  d.setDate(d.getDate() + 1);
+  return iso(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 function Legende({ onAppliquer }: { onAppliquer: (type: TypeAbsence) => void }) {
@@ -747,95 +854,369 @@ function SaisieJoursClient({
 
 // Table capacité/vélocité (jours-homme par sprint) pour un type donné
 // (réel ou prévisionnel), avec une ligne Total équipe.
-function TableauCapacite({
-  titre,
-  type,
-  membres,
-  donnees,
+function SectionSprints({
+  sprints,
+  isLoading,
+  isError,
+  error,
+  onAjouter,
+  onModifier,
+  onSupprimer,
 }: {
-  titre: string;
-  type: TypeCapacite;
-  membres: Membre[];
-  donnees: CapaciteSprint[];
+  sprints: Sprint[];
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+  onAjouter: () => void;
+  onModifier: (id: string, champs: Partial<Pick<Sprint, "nom" | "date_debut" | "date_fin">>) => void;
+  onSupprimer: (id: string) => void;
 }) {
-  const parMembre = useMemo(() => {
-    const map = new Map<string, number[]>();
-    for (const c of donnees) {
-      if (c.type !== type) continue;
-      if (!map.has(c.membre_id)) map.set(c.membre_id, Array(12).fill(0));
-      map.get(c.membre_id)![c.sprint - 1] = c.jours;
+  return (
+    <div className="rounded-lg border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
+        <div>
+          <h2 className="text-sm font-semibold">Sprints</h2>
+          <p className="text-xs text-muted-foreground">
+            Ajoutez, renommez, modifiez les dates ou supprimez un sprint.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={onAjouter}>
+          <Plus className="size-4" /> Ajouter un sprint
+        </Button>
+      </div>
+      {isLoading ? (
+        <p className="px-4 pb-4 text-sm text-muted-foreground">Chargement…</p>
+      ) : isError ? (
+        <p className="px-4 pb-4 text-sm text-destructive">
+          Impossible de charger les sprints : {error?.message}
+        </p>
+      ) : sprints.length === 0 ? (
+        <p className="px-4 pb-4 text-sm text-muted-foreground">
+          Aucun sprint. Cliquez sur « Ajouter un sprint ».
+        </p>
+      ) : (
+        <div className="overflow-x-auto border-t">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr>
+                <th className="border-b px-3 py-2 text-left font-medium">Sprint</th>
+                <th className="border-b border-l px-3 py-2 text-left font-medium">Début</th>
+                <th className="border-b border-l px-3 py-2 text-left font-medium">Fin</th>
+                <th className="border-b border-l px-3 py-2 text-left font-medium" aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {sprints.map((s) => (
+                <LigneSprint key={s.id} sprint={s} onModifier={onModifier} onSupprimer={onSupprimer} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LigneSprint({
+  sprint,
+  onModifier,
+  onSupprimer,
+}: {
+  sprint: Sprint;
+  onModifier: (id: string, champs: Partial<Pick<Sprint, "nom" | "date_debut" | "date_fin">>) => void;
+  onSupprimer: (id: string) => void;
+}) {
+  const [nom, setNom] = useState(sprint.nom);
+  useEffect(() => setNom(sprint.nom), [sprint.nom]);
+
+  return (
+    <tr className="hover:bg-accent/40">
+      <td className="border-b px-3 py-1.5">
+        <input
+          className="w-32 rounded border bg-transparent px-2 py-1 text-sm"
+          value={nom}
+          onChange={(e) => setNom(e.target.value)}
+          onBlur={() => {
+            const propre = nom.trim();
+            if (propre && propre !== sprint.nom) onModifier(sprint.id, { nom: propre });
+            else setNom(sprint.nom);
+          }}
+        />
+      </td>
+      <td className="border-b border-l px-3 py-1.5">
+        <input
+          type="date"
+          className="rounded border bg-transparent px-2 py-1 text-sm"
+          value={sprint.date_debut}
+          onChange={(e) => e.target.value && onModifier(sprint.id, { date_debut: e.target.value })}
+        />
+      </td>
+      <td className="border-b border-l px-3 py-1.5">
+        <input
+          type="date"
+          className="rounded border bg-transparent px-2 py-1 text-sm"
+          value={sprint.date_fin}
+          onChange={(e) => e.target.value && onModifier(sprint.id, { date_fin: e.target.value })}
+        />
+      </td>
+      <td className="border-b border-l px-2 py-1.5 text-right">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={`Supprimer ${sprint.nom}`}
+          onClick={() => {
+            if (window.confirm(`Supprimer ${sprint.nom} ?`)) onSupprimer(sprint.id);
+          }}
+        >
+          <Trash2 className="size-4 text-destructive" />
+        </Button>
+      </td>
+    </tr>
+  );
+}
+
+function TableauCapacite({
+  membres,
+  sprints,
+  jours,
+  speciaux,
+}: {
+  membres: Membre[];
+  sprints: Sprint[];
+  jours: Jour[];
+  speciaux: JourSpecial[];
+}) {
+  const detailParMembre = useMemo(() => {
+    const map = new Map<string, DetailCapacite[]>();
+    for (const m of membres) {
+      map.set(
+        m.id,
+        sprints.map((s) => calculerCapacite(m.id, s.date_debut, s.date_fin, jours, speciaux)),
+      );
     }
     return map;
-  }, [donnees, type]);
+  }, [membres, sprints, jours, speciaux]);
 
-  const membresConcernes = membres.filter((m) => parMembre.has(m.id));
-  if (membresConcernes.length === 0) {
-    return (
-      <p className="px-4 py-4 text-xs text-muted-foreground">
-        Aucune donnée « {titre} » disponible.
-      </p>
-    );
+  if (membres.length === 0) {
+    return <p className="px-4 py-4 text-xs text-muted-foreground">Aucune personne à afficher.</p>;
   }
 
-  const totalParSprint = Array(12).fill(0);
-  for (const m of membresConcernes) {
-    parMembre.get(m.id)!.forEach((v, i) => {
-      totalParSprint[i] += v;
-    });
+  const totalParSprint = sprints.map((_, i) =>
+    membres.reduce((s, m) => s + (detailParMembre.get(m.id)?.[i]?.capacite ?? 0), 0),
+  );
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-xs">
+        <thead>
+          <tr>
+            <th className="sticky left-0 z-10 min-w-48 border-b bg-card px-3 py-2 text-left font-medium">
+              Personne
+            </th>
+            {sprints.map((s) => (
+              <th key={s.id} className="border-b border-l px-2 py-1 text-center font-medium">
+                {s.nom}
+              </th>
+            ))}
+            <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {membres.map((m) => {
+            const details = detailParMembre.get(m.id) ?? [];
+            const total = details.reduce((s, d) => s + d.capacite, 0);
+            return (
+              <tr key={m.id} className="hover:bg-accent/40">
+                <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">{m.nom}</td>
+                {details.map((d, i) => (
+                  <td
+                    key={i}
+                    className="border-b border-l px-2 py-1 text-center font-mono"
+                    title={`${formatNombre(d.joursOuvres)} j ouvrés − ${formatNombre(d.congesValides)} j congé validé = ${formatNombre(d.capacite)}`}
+                  >
+                    {formatNombre(d.capacite)}
+                  </td>
+                ))}
+                <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                  {formatNombre(total)}
+                </td>
+              </tr>
+            );
+          })}
+          <tr className="bg-muted/60 font-semibold">
+            <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">Total équipe</td>
+            {totalParSprint.map((v, i) => (
+              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+                {formatNombre(v)}
+              </td>
+            ))}
+            <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+              {formatNombre(totalParSprint.reduce((s, v) => s + v, 0))}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TableauRepartition({
+  taches,
+  onModifierPourcentage,
+}: {
+  taches: TacheRepartition[];
+  onModifierPourcentage: (id: string, pourcentage: number) => void;
+}) {
+  if (taches.length === 0) {
+    return <p className="px-4 py-4 text-xs text-muted-foreground">Aucun type de tâche défini.</p>;
+  }
+  const total = taches.reduce((s, t) => s + t.pourcentage, 0);
+  const totalArrondi = Math.round(total * 100) / 100;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr>
+            <th className="border-b px-3 py-2 text-left font-medium">Type de tâche</th>
+            <th className="border-b border-l px-3 py-2 text-center font-medium">% de la capacité</th>
+          </tr>
+        </thead>
+        <tbody>
+          {taches.map((t) => (
+            <LignePourcentage key={t.id} tache={t} onModifier={onModifierPourcentage} />
+          ))}
+          <tr className={totalArrondi === 100 ? "bg-muted/60 font-semibold" : "bg-destructive/10 font-semibold"}>
+            <td className="border-t px-3 py-1.5">Total</td>
+            <td className="border-t border-l px-3 py-1.5 text-center font-mono">
+              {formatNombre(totalArrondi)} %{totalArrondi !== 100 ? " (devrait faire 100 %)" : ""}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function LignePourcentage({
+  tache,
+  onModifier,
+}: {
+  tache: TacheRepartition;
+  onModifier: (id: string, pourcentage: number) => void;
+}) {
+  const [texte, setTexte] = useState(String(tache.pourcentage).replace(".", ","));
+  useEffect(() => setTexte(String(tache.pourcentage).replace(".", ",")), [tache.pourcentage]);
+
+  function valider() {
+    const n = Number(texte.replace(",", "."));
+    if (Number.isNaN(n) || n < 0 || n > 100) {
+      setTexte(String(tache.pourcentage).replace(".", ","));
+      return;
+    }
+    if (n !== tache.pourcentage) onModifier(tache.id, n);
+    else setTexte(String(tache.pourcentage).replace(".", ","));
   }
 
   return (
-    <div className="border-t">
-      <h3 className="px-4 pt-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {titre}
-      </h3>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-xs">
-          <thead>
-            <tr>
-              <th className="sticky left-0 z-10 min-w-48 border-b bg-card px-3 py-2 text-left font-medium">
-                Personne
+    <tr className="hover:bg-accent/40">
+      <td className="border-b px-3 py-1.5">{tache.nom}</td>
+      <td className="border-b border-l px-2 py-1 text-center">
+        <input
+          className="w-20 rounded border bg-transparent px-2 py-1 text-center font-mono text-sm"
+          inputMode="decimal"
+          value={texte}
+          onChange={(e) => setTexte(e.target.value)}
+          onBlur={valider}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+        />{" "}
+        %
+      </td>
+    </tr>
+  );
+}
+
+function TableauTachesParSprint({
+  taches,
+  sprints,
+  membres,
+  jours,
+  speciaux,
+}: {
+  taches: TacheRepartition[];
+  sprints: Sprint[];
+  membres: Membre[];
+  jours: Jour[];
+  speciaux: JourSpecial[];
+}) {
+  const capaciteParSprint = useMemo(
+    () =>
+      sprints.map((s) =>
+        membres.reduce(
+          (total, m) => total + calculerCapacite(m.id, s.date_debut, s.date_fin, jours, speciaux).capacite,
+          0,
+        ),
+      ),
+    [sprints, membres, jours, speciaux],
+  );
+
+  if (taches.length === 0) {
+    return <p className="px-4 py-4 text-xs text-muted-foreground">Aucun type de tâche défini.</p>;
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-xs">
+        <thead>
+          <tr>
+            <th className="sticky left-0 z-10 min-w-40 border-b bg-card px-3 py-2 text-left font-medium">
+              Type de tâche
+            </th>
+            {sprints.map((s) => (
+              <th key={s.id} className="border-b border-l px-2 py-1 text-center font-medium">
+                {s.nom}
               </th>
-              {SPRINTS.map((s) => (
-                <th key={s} className="border-b border-l px-2 py-1 text-center font-medium">
-                  Sprint {s}
-                </th>
-              ))}
-              <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {membresConcernes.map((m) => {
-              const valeurs = parMembre.get(m.id)!;
-              const total = valeurs.reduce((s, v) => s + v, 0);
-              return (
-                <tr key={m.id} className="hover:bg-accent/40">
-                  <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">{m.nom}</td>
-                  {valeurs.map((v, i) => (
-                    <td key={i} className="border-b border-l px-2 py-1 text-center font-mono">
-                      {formatNombre(v)}
-                    </td>
-                  ))}
-                  <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
-                    {formatNombre(total)}
-                  </td>
-                </tr>
-              );
-            })}
-            <tr className="bg-muted/60 font-semibold">
-              <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">Total équipe</td>
-              {totalParSprint.map((v, i) => (
-                <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
-                  {formatNombre(v)}
+            ))}
+            <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {taches.map((t) => {
+            const valeurs = capaciteParSprint.map((c) => (t.pourcentage / 100) * c);
+            const total = valeurs.reduce((s, v) => s + v, 0);
+            return (
+              <tr key={t.id} className="hover:bg-accent/40">
+                <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">
+                  {t.nom} <span className="text-muted-foreground">({formatNombre(t.pourcentage)} %)</span>
                 </td>
-              ))}
-              <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
-                {formatNombre(totalParSprint.reduce((s, v) => s + v, 0))}
+                {valeurs.map((v, i) => (
+                  <td key={i} className="border-b border-l px-2 py-1 text-center font-mono">
+                    {formatNombre(v)}
+                  </td>
+                ))}
+                <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                  {formatNombre(total)}
+                </td>
+              </tr>
+            );
+          })}
+          <tr className="bg-muted/60 font-semibold">
+            <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">
+              Total (= capacité équipe)
+            </td>
+            {capaciteParSprint.map((v, i) => (
+              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+                {formatNombre(v)}
               </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            ))}
+            <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+              {formatNombre(capaciteParSprint.reduce((s, v) => s + v, 0))}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }

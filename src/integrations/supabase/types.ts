@@ -14,41 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      capacite_sprint: {
-        Row: {
-          created_at: string
-          id: string
-          jours: number
-          membre_id: string
-          sprint: number
-          type: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          jours: number
-          membre_id: string
-          sprint: number
-          type: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          jours?: number
-          membre_id?: string
-          sprint?: number
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "capacite_sprint_membre_id_fkey"
-            columns: ["membre_id"]
-            isOneToOne: false
-            referencedRelation: "membres"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       equipes: {
         Row: {
           couleur: string
@@ -202,6 +167,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      repartition_taches: {
+        Row: {
+          created_at: string
+          id: string
+          nom: string
+          ordre: number
+          pourcentage: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom: string
+          ordre?: number
+          pourcentage: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom?: string
+          ordre?: number
+          pourcentage?: number
+        }
+        Relationships: []
+      }
+      sprints: {
+        Row: {
+          created_at: string
+          date_debut: string
+          date_fin: string
+          id: string
+          nom: string
+          ordre: number
+        }
+        Insert: {
+          created_at?: string
+          date_debut: string
+          date_fin: string
+          id?: string
+          nom: string
+          ordre?: number
+        }
+        Update: {
+          created_at?: string
+          date_debut?: string
+          date_fin?: string
+          id?: string
+          nom?: string
+          ordre?: number
+        }
+        Relationships: []
       }
     }
     Views: {
