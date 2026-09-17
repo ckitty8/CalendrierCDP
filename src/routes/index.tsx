@@ -18,6 +18,7 @@ import {
   chargerJours,
   chargerReferentiel,
   enregistrerJour,
+  enregistrerJoursTravaillesClient,
   estWeekend,
   JOURS_COURTS,
   joursDuMois,
@@ -68,6 +69,13 @@ function Planning() {
       special: boolean;
     }) => enregistrerJour(v.membre_id, v.date, v.valeur, v.type, v.special),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["jours", annee] }),
+    onError: (e: Error) => toast.error("Enregistrement impossible : " + e.message),
+  });
+
+  const mutationJoursClient = useMutation({
+    mutationFn: (v: { membre_id: string; valeur: number | null }) =>
+      enregistrerJoursTravaillesClient(v.membre_id, v.valeur),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["referentiel"] }),
     onError: (e: Error) => toast.error("Enregistrement impossible : " + e.message),
   });
 
@@ -126,6 +134,8 @@ function Planning() {
     const parMois = Array.from({ length: 12 }, () => ({ travaille: 0, conges: 0 }));
     let totalTravaille = 0;
     let totalConges = 0;
+    let totalJoursClient = 0;
+    let totalAPrendre = 0;
     for (const { membres: liste } of groupes) {
       for (const m of liste) {
         const bilan = bilanAnnuel.get(m.id);
@@ -138,9 +148,13 @@ function Planning() {
         });
         totalTravaille += bilan.totalTravaille;
         totalConges += bilan.totalConges;
+        if (m.jours_travailles_client !== null) {
+          totalJoursClient += m.jours_travailles_client;
+          totalAPrendre += m.jours_travailles_client - bilan.totalTravaille;
+        }
       }
     }
-    return { parMois, totalTravaille, totalConges };
+    return { parMois, totalTravaille, totalConges, totalJoursClient, totalAPrendre };
   }, [groupes, bilanAnnuel]);
 
   // Enregistre la valeur tapée au clavier (0, 0,5 ou vide = travaillé), en
@@ -380,6 +394,12 @@ function Planning() {
                         <th colSpan={2} className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">
                           Total année
                         </th>
+                        <th
+                          colSpan={2}
+                          className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium"
+                        >
+                          Congés
+                        </th>
                       </tr>
                       <tr>
                         <th className="sticky left-0 z-10 border-b bg-card px-3 py-1" />
@@ -399,6 +419,12 @@ function Planning() {
                         <th className="border-b bg-muted/60 px-2 py-1 text-center font-normal text-muted-foreground">
                           Non trav.
                         </th>
+                        <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-normal text-muted-foreground">
+                          Trav. client
+                        </th>
+                        <th className="border-b bg-muted/60 px-2 py-1 text-center font-normal text-muted-foreground">
+                          À prendre
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -406,7 +432,7 @@ function Planning() {
                         <Fragment key={equipe.id}>
                           <tr>
                             <td
-                              colSpan={MOIS_COURTS.length * 2 + 3}
+                              colSpan={MOIS_COURTS.length * 2 + 5}
                               className="border-b border-t bg-muted/60 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide"
                               style={{ color: equipe.couleur }}
                             >
@@ -415,6 +441,8 @@ function Planning() {
                           </tr>
                           {liste.map((m) => {
                             const bilan = bilanAnnuel.get(m.id);
+                            const joursClient = m.jours_travailles_client;
+                            const aPrendre = joursClient !== null ? joursClient - (bilan?.totalTravaille ?? 0) : null;
                             return (
                               <tr key={m.id} className="hover:bg-accent/40">
                                 <td className="sticky left-0 z-10 border-b border-r bg-card px-3 py-1.5 font-medium">
@@ -435,6 +463,15 @@ function Planning() {
                                 </td>
                                 <td className="border-b bg-muted/40 px-2 py-1 text-center font-mono font-medium">
                                   {formatNombre(bilan?.totalConges ?? 0)}
+                                </td>
+                                <td className="border-b border-l p-0 text-center">
+                                  <SaisieJoursClient
+                                    valeur={joursClient}
+                                    onCommit={(v) => mutationJoursClient.mutate({ membre_id: m.id, valeur: v })}
+                                  />
+                                </td>
+                                <td className="border-b px-2 py-1 text-center font-mono font-medium">
+                                  {aPrendre === null ? "—" : formatNombre(aPrendre)}
                                 </td>
                               </tr>
                             );
@@ -458,6 +495,12 @@ function Planning() {
                         </td>
                         <td className="border-t bg-muted px-2 py-1 text-center font-mono">
                           {formatNombre(totalGeneral.totalConges)}
+                        </td>
+                        <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+                          {formatNombre(totalGeneral.totalJoursClient)}
+                        </td>
+                        <td className="border-t bg-muted px-2 py-1 text-center font-mono">
+                          {formatNombre(totalGeneral.totalAPrendre)}
                         </td>
                       </tr>
                     </tbody>
@@ -575,6 +618,55 @@ function CelluleValeur({
         saisie ? "font-semibold" : special ? "placeholder:text-muted-foreground" : ""
       } ${active ? "ring-2 ring-inset ring-ring" : ""}`}
       style={couleur ? { backgroundColor: couleur, color: "oklch(0.2 0 0)" } : undefined}
+    />
+  );
+}
+
+// Saisie du nombre de jours total travaillé client pour une personne
+// (onglet Jours de congés) : accepte un nombre (ex. 218 ou 218,5) ou vide
+// pour effacer. Validé à la perte de focus ou sur Entrée.
+function SaisieJoursClient({
+  valeur,
+  onCommit,
+}: {
+  valeur: number | null;
+  onCommit: (valeur: number | null) => void;
+}) {
+  const affichage = valeur === null ? "" : String(valeur).replace(".", ",");
+  const [texte, setTexte] = useState(affichage);
+
+  useEffect(() => setTexte(affichage), [affichage]);
+
+  const valider = () => {
+    const brut = texte.trim().replace(",", ".");
+    if (brut === "") {
+      if (valeur !== null) onCommit(null);
+      return;
+    }
+    const nombre = Number(brut);
+    if (Number.isNaN(nombre) || nombre < 0) {
+      setTexte(affichage);
+      return;
+    }
+    if (nombre !== valeur) onCommit(nombre);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={texte}
+      onChange={(e) => setTexte(e.target.value)}
+      onBlur={valider}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+      }}
+      placeholder="—"
+      title="Nombre de jours total travaillé client"
+      className="h-8 w-full border-0 bg-transparent text-center font-mono text-xs outline-none placeholder:text-muted-foreground"
     />
   );
 }

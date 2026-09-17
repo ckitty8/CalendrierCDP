@@ -99,6 +99,7 @@ export type Database = {
           created_at: string
           equipe_id: string
           id: string
+          jours_travailles_client: number | null
           nom: string
           projet_id: string | null
           role: string | null
@@ -107,6 +108,7 @@ export type Database = {
           created_at?: string
           equipe_id: string
           id?: string
+          jours_travailles_client?: number | null
           nom: string
           projet_id?: string | null
           role?: string | null
@@ -115,6 +117,7 @@ export type Database = {
           created_at?: string
           equipe_id?: string
           id?: string
+          jours_travailles_client?: number | null
           nom?: string
           projet_id?: string | null
           role?: string | null

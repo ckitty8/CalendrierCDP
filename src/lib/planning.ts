@@ -8,6 +8,7 @@ export type Membre = {
   projet_id: string | null;
   nom: string;
   role: string | null;
+  jours_travailles_client: number | null;
 };
 export type Jour = {
   id: string;
@@ -143,5 +144,10 @@ export async function enregistrerJour(
   const { error } = await supabase
     .from("jours")
     .upsert({ membre_id, date, valeur, type }, { onConflict: "membre_id,date" });
+  if (error) throw error;
+}
+
+export async function enregistrerJoursTravaillesClient(membre_id: string, valeur: number | null) {
+  const { error } = await supabase.from("membres").update({ jours_travailles_client: valeur }).eq("id", membre_id);
   if (error) throw error;
 }
