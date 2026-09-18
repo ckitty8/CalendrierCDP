@@ -65,6 +65,15 @@ export const Route = createFileRoute("/")({
 
 const ANNEE_DEFAUT = 2026;
 
+// Largeurs de colonnes partagées entre le tableau "Capacité par sprint" et
+// le tableau "% de répartition des tâches", pour que leurs colonnes de
+// sprint restent alignées verticalement (même grille, même défilement).
+const LARGEUR_LABEL = 176;
+const LARGEUR_SECONDAIRE = 64;
+const LARGEUR_SPRINT = 150;
+const LARGEUR_SUPPLEMENT = 56;
+const LARGEUR_TOTAL = 88;
+
 function Planning() {
   const queryClient = useQueryClient();
   const [annee, setAnnee] = useState(ANNEE_DEFAUT);
@@ -590,23 +599,28 @@ function Planning() {
 
             {afficherCapacite && (
               <TabsContent value="capacite">
-                <div className="space-y-4">
-                  <div className="rounded-lg border bg-card">
-                    <div className="px-4 py-3">
-                      <h2 className="text-sm font-semibold">Capacité par sprint</h2>
-                      <p className="text-xs text-muted-foreground">
-                        Jours-homme disponibles par personne, sur la période de chaque sprint. Cliquez
-                        sur le nom ou les dates d&apos;un sprint pour les modifier, ou sur « + » pour en
-                        ajouter un.
-                      </p>
-                    </div>
-                    {sprintsQuery.isLoading || jours.isLoading ? (
-                      <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
-                    ) : sprintsQuery.isError ? (
-                      <p className="px-4 py-6 text-sm text-destructive">
-                        Impossible de charger les sprints : {(sprintsQuery.error as Error).message}
-                      </p>
-                    ) : (
+                <div className="rounded-lg border bg-card">
+                  <div className="px-4 py-3">
+                    <h2 className="text-sm font-semibold">Capacité par sprint</h2>
+                    <p className="text-xs text-muted-foreground">
+                      Jours-homme disponibles par personne, sur la période de chaque sprint. Cliquez
+                      sur le nom ou les dates d&apos;un sprint pour les modifier, ou sur « + » pour en
+                      ajouter un. Les colonnes des deux tableaux ci-dessous correspondent aux mêmes
+                      sprints.
+                    </p>
+                  </div>
+                  {sprintsQuery.isLoading || jours.isLoading || repartitionQuery.isLoading ? (
+                    <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
+                  ) : sprintsQuery.isError ? (
+                    <p className="px-4 py-6 text-sm text-destructive">
+                      Impossible de charger les sprints : {(sprintsQuery.error as Error).message}
+                    </p>
+                  ) : (sprintsQuery.data?.length ?? 0) === 0 ? (
+                    <p className="px-4 py-6 text-sm text-muted-foreground">
+                      Aucun sprint défini. Ajoutez-en un ci-dessous.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
                       <TableauCapacite
                         membres={membresFiltres}
                         sprints={sprintsQuery.data ?? []}
@@ -627,32 +641,18 @@ function Planning() {
                         onModifierSprint={(id, champs) => mutationModifierSprint.mutate({ id, champs })}
                         onSupprimerSprint={(id) => mutationSupprimerSprint.mutate(id)}
                       />
-                    )}
-                    <div className="border-t px-4 py-3 text-xs text-muted-foreground">
-                      <p className="font-medium text-foreground">Comment est calculée la capacité ?</p>
-                      <p className="mt-1">
-                        Capacité = jours ouvrés de la période du sprint (hors week-ends et jours
-                        fériés/fermeture) − jours de congé validés saisis dans le planning sur cette
-                        même période. Survolez une case du tableau pour voir le détail du calcul.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border bg-card">
-                    <div className="px-4 py-3">
-                      <h2 className="text-sm font-semibold">% de répartition des tâches</h2>
-                      <p className="text-xs text-muted-foreground">
-                        Pourcentage éditable par type de tâche, et jours-homme par sprint (% ×
-                        capacité totale de l&apos;équipe sur le sprint).
-                      </p>
-                    </div>
-                    {sprintsQuery.isLoading || repartitionQuery.isLoading || jours.isLoading ? (
-                      <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
-                    ) : (sprintsQuery.data?.length ?? 0) === 0 ? (
-                      <p className="px-4 py-6 text-sm text-muted-foreground">
-                        Aucun sprint défini. Ajoutez-en un dans le tableau de capacité ci-dessus.
-                      </p>
-                    ) : (
+                      <div className="border-t px-3 py-2 text-[11px] text-muted-foreground">
+                        Capacité = jours ouvrés de la période (hors week-ends et jours
+                        fériés/fermeture) − jours de congé validés saisis sur cette même période.
+                        Survolez une case pour voir le détail.
+                      </div>
+                      <div className="border-t px-3 py-2">
+                        <h3 className="text-xs font-semibold">% de répartition des tâches</h3>
+                        <p className="text-[11px] text-muted-foreground">
+                          Pourcentage éditable par type de tâche ; jours-homme par sprint = % ×
+                          capacité totale de l&apos;équipe sur le sprint.
+                        </p>
+                      </div>
                       <TableauRepartitionTaches
                         taches={repartitionQuery.data ?? []}
                         sprints={sprintsQuery.data ?? []}
@@ -663,8 +663,8 @@ function Planning() {
                           mutationPourcentageTache.mutate({ id, pourcentage })
                         }
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             )}
@@ -872,84 +872,86 @@ function TableauCapacite({
   );
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-xs">
-        <thead>
+    <table className="border-collapse text-xs" style={{ tableLayout: "fixed" }}>
+      <colgroup>
+        <col style={{ width: LARGEUR_LABEL }} />
+        <col style={{ width: LARGEUR_SECONDAIRE }} />
+        {sprints.map((s) => (
+          <col key={s.id} style={{ width: LARGEUR_SPRINT }} />
+        ))}
+        <col style={{ width: LARGEUR_SUPPLEMENT }} />
+        <col style={{ width: LARGEUR_TOTAL }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th className="sticky left-0 z-10 truncate border-b bg-card px-3 py-2 text-left align-bottom font-medium">
+            Personne
+          </th>
+          <th className="border-b border-l px-2 py-1" />
+          {sprints.map((s) => (
+            <EnteteSprint key={s.id} sprint={s} onModifier={onModifierSprint} onSupprimer={onSupprimerSprint} />
+          ))}
+          <th className="border-b border-l px-2 py-1 text-center align-middle">
+            <Button variant="ghost" size="icon" aria-label="Ajouter un sprint" onClick={onAjouterSprint}>
+              <Plus className="size-4" />
+            </Button>
+          </th>
+          <th className="border-b border-l bg-muted/60 px-2 py-1 text-center align-bottom font-medium">
+            Total
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {membres.length === 0 ? (
           <tr>
-            <th className="sticky left-0 z-10 min-w-48 border-b bg-card px-3 py-2 text-left align-bottom font-medium">
-              Personne
-            </th>
-            {sprints.map((s) => (
-              <EnteteSprint key={s.id} sprint={s} onModifier={onModifierSprint} onSupprimer={onSupprimerSprint} />
-            ))}
-            <th className="border-b border-l px-2 py-1 text-center align-middle">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Ajouter un sprint"
-                onClick={onAjouterSprint}
-              >
-                <Plus className="size-4" />
-              </Button>
-            </th>
-            <th className="border-b border-l bg-muted/60 px-2 py-1 text-center align-bottom font-medium">
-              Total
-            </th>
+            <td colSpan={sprints.length + 4} className="px-3 py-4 text-center text-muted-foreground">
+              Aucune personne à afficher.
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {membres.length === 0 ? (
-            <tr>
-              <td colSpan={sprints.length + 3} className="px-3 py-4 text-center text-muted-foreground">
-                Aucune personne à afficher.
-              </td>
-            </tr>
-          ) : (
-            membres.map((m) => {
-              const details = detailParMembre.get(m.id) ?? [];
-              const total = details.reduce((s, d) => s + d.capacite, 0);
-              return (
-                <tr key={m.id} className="hover:bg-accent/40">
-                  <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">{m.nom}</td>
-                  {details.map((d, i) => (
-                    <td
-                      key={i}
-                      className="border-b border-l px-2 py-1 text-center font-mono"
-                      title={`${formatNombre(d.joursOuvres)} j ouvrés − ${formatNombre(d.congesValides)} j congé validé = ${formatNombre(d.capacite)}`}
-                    >
-                      {formatNombre(d.capacite)}
-                    </td>
-                  ))}
-                  <td className="border-b border-l px-2 py-1" />
-                  <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
-                    {formatNombre(total)}
-                  </td>
-                </tr>
-              );
-            })
-          )}
-          {sprints.length > 0 && (
-            <tr className="bg-muted/60 font-semibold">
-              <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">Total équipe</td>
-              {totalParSprint.map((v, i) => (
-                <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
-                  {formatNombre(v)}
+        ) : (
+          membres.map((m) => {
+            const details = detailParMembre.get(m.id) ?? [];
+            const total = details.reduce((s, d) => s + d.capacite, 0);
+            return (
+              <tr key={m.id} className="hover:bg-accent/40">
+                <td className="sticky left-0 z-10 truncate border-b bg-card px-3 py-1.5 font-medium" title={m.nom}>
+                  {m.nom}
                 </td>
-              ))}
-              <td className="border-t border-l px-2 py-1" />
-              <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
-                {formatNombre(totalParSprint.reduce((s, v) => s + v, 0))}
+                <td className="border-b border-l px-2 py-1" />
+                {details.map((d, i) => (
+                  <td
+                    key={i}
+                    className="border-b border-l px-2 py-1 text-center font-mono"
+                    title={`${formatNombre(d.joursOuvres)} j ouvrés − ${formatNombre(d.congesValides)} j congé validé = ${formatNombre(d.capacite)}`}
+                  >
+                    {formatNombre(d.capacite)}
+                  </td>
+                ))}
+                <td className="border-b border-l px-2 py-1" />
+                <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                  {formatNombre(total)}
+                </td>
+              </tr>
+            );
+          })
+        )}
+        {sprints.length > 0 && (
+          <tr className="bg-muted/60 font-semibold">
+            <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">Total équipe</td>
+            <td className="border-t border-l px-2 py-1" />
+            {totalParSprint.map((v, i) => (
+              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+                {formatNombre(v)}
               </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-      {sprints.length === 0 && (
-        <p className="px-3 py-4 text-xs text-muted-foreground">
-          Aucun sprint défini. Cliquez sur « + » pour en ajouter un.
-        </p>
-      )}
-    </div>
+            ))}
+            <td className="border-t border-l px-2 py-1" />
+            <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+              {formatNombre(totalParSprint.reduce((s, v) => s + v, 0))}
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
   );
 }
 
@@ -966,7 +968,7 @@ function EnteteSprint({
   useEffect(() => setNom(sprint.nom), [sprint.nom]);
 
   return (
-    <th className="min-w-[150px] border-b border-l px-1.5 py-1.5 text-center align-top font-medium">
+    <th className="overflow-hidden border-b border-l px-1.5 py-1.5 text-center align-top font-medium">
       <div className="flex items-center justify-center gap-1">
         <input
           className="min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-center text-xs font-medium"
@@ -1055,74 +1057,87 @@ function TableauRepartitionTaches({
   const classeTotal = totalPourcentage === 100 ? "bg-muted/60" : "bg-destructive/10";
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-xs">
-        <thead>
-          <tr>
-            <th className="sticky left-0 z-10 min-w-40 border-b bg-card px-3 py-2 text-left font-medium">
-              Type de tâche
+    <table className="border-collapse text-xs" style={{ tableLayout: "fixed" }}>
+      <colgroup>
+        <col style={{ width: LARGEUR_LABEL }} />
+        <col style={{ width: LARGEUR_SECONDAIRE }} />
+        {sprints.map((s) => (
+          <col key={s.id} style={{ width: LARGEUR_SPRINT }} />
+        ))}
+        <col style={{ width: LARGEUR_SUPPLEMENT }} />
+        <col style={{ width: LARGEUR_TOTAL }} />
+      </colgroup>
+      <thead>
+        <tr>
+          <th className="sticky left-0 z-10 truncate border-b bg-card px-3 py-2 text-left font-medium">
+            Type de tâche
+          </th>
+          <th className="border-b border-l px-2 py-1 text-center font-medium">%</th>
+          {sprints.map((s) => (
+            <th key={s.id} className="overflow-hidden truncate border-b border-l px-2 py-1 text-center font-medium">
+              {s.nom}
             </th>
-            <th className="border-b border-l px-2 py-1 text-center font-medium">%</th>
-            {sprints.map((s) => (
-              <th key={s.id} className="border-b border-l px-2 py-1 text-center font-medium">
-                {s.nom}
-              </th>
-            ))}
-            <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {taches.map((t) => {
-            const valeurs = valeursParTache.get(t.id) ?? [];
-            const total = valeurs.reduce((s, v) => s + v, 0);
-            return (
-              <tr key={t.id} className="hover:bg-accent/40">
-                <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">{t.nom}</td>
-                <td className="border-b border-l px-1 py-1 text-center">
-                  <ChampPourcentage tache={t} onModifier={onModifierPourcentage} />
-                </td>
-                {valeurs.map((v, i) => (
-                  <td key={i} className="border-b border-l px-2 py-1 text-center font-mono">
-                    {formatNombre(v)}
-                  </td>
-                ))}
-                <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
-                  {formatNombre(total)}
-                </td>
-              </tr>
-            );
-          })}
-          <tr className="bg-muted/40 font-medium">
-            <td className="sticky left-0 z-10 border-t bg-muted/40 px-3 py-1.5">TT tous sauf US</td>
-            <td className="border-t border-l px-2 py-1 text-center font-mono">
-              {formatNombre(pourcentageSaufUS)} %
-            </td>
-            {valeursSaufUS.map((v, i) => (
-              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
-                {formatNombre(v)}
+          ))}
+          <th className="border-b border-l px-2 py-1" />
+          <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {taches.map((t) => {
+          const valeurs = valeursParTache.get(t.id) ?? [];
+          const total = valeurs.reduce((s, v) => s + v, 0);
+          return (
+            <tr key={t.id} className="hover:bg-accent/40">
+              <td className="sticky left-0 z-10 truncate border-b bg-card px-3 py-1.5 font-medium" title={t.nom}>
+                {t.nom}
               </td>
-            ))}
-            <td className="border-t border-l bg-muted/60 px-2 py-1 text-center font-mono">
-              {formatNombre(valeursSaufUS.reduce((s, v) => s + v, 0))}
-            </td>
-          </tr>
-          <tr className={`${classeTotal} font-semibold`}>
-            <td className={`sticky left-0 z-10 border-t px-3 py-1.5 ${classeTotal}`}>TT tout</td>
-            <td className="border-t border-l px-2 py-1 text-center font-mono">
-              {formatNombre(totalPourcentage)} %{totalPourcentage !== 100 ? " (≠ 100 %)" : ""}
-            </td>
-            {capaciteParSprint.map((v, i) => (
-              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
-                {formatNombre(v)}
+              <td className="border-b border-l px-1 py-1 text-center">
+                <ChampPourcentage tache={t} onModifier={onModifierPourcentage} />
               </td>
-            ))}
-            <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
-              {formatNombre(capaciteParSprint.reduce((s, v) => s + v, 0))}
+              {valeurs.map((v, i) => (
+                <td key={i} className="border-b border-l px-2 py-1 text-center font-mono">
+                  {formatNombre(v)}
+                </td>
+              ))}
+              <td className="border-b border-l px-2 py-1" />
+              <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                {formatNombre(total)}
+              </td>
+            </tr>
+          );
+        })}
+        <tr className="bg-muted/40 font-medium">
+          <td className="sticky left-0 z-10 border-t bg-muted/40 px-3 py-1.5">TT tous sauf US</td>
+          <td className="border-t border-l px-2 py-1 text-center font-mono">
+            {formatNombre(pourcentageSaufUS)} %
+          </td>
+          {valeursSaufUS.map((v, i) => (
+            <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+              {formatNombre(v)}
             </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+          ))}
+          <td className="border-t border-l px-2 py-1" />
+          <td className="border-t border-l bg-muted/60 px-2 py-1 text-center font-mono">
+            {formatNombre(valeursSaufUS.reduce((s, v) => s + v, 0))}
+          </td>
+        </tr>
+        <tr className={`${classeTotal} font-semibold`}>
+          <td className={`sticky left-0 z-10 border-t px-3 py-1.5 ${classeTotal}`}>TT tout</td>
+          <td className="border-t border-l px-2 py-1 text-center font-mono">
+            {formatNombre(totalPourcentage)} %{totalPourcentage !== 100 ? " (≠ 100 %)" : ""}
+          </td>
+          {capaciteParSprint.map((v, i) => (
+            <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+              {formatNombre(v)}
+            </td>
+          ))}
+          <td className="border-t border-l px-2 py-1" />
+          <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+            {formatNombre(capaciteParSprint.reduce((s, v) => s + v, 0))}
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 }
 
