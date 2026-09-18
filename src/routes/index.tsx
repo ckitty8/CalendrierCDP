@@ -591,33 +591,20 @@ function Planning() {
             {afficherCapacite && (
               <TabsContent value="capacite">
                 <div className="space-y-4">
-                  <SectionSprints
-                    sprints={sprintsQuery.data ?? []}
-                    isLoading={sprintsQuery.isLoading}
-                    isError={sprintsQuery.isError}
-                    error={sprintsQuery.error as Error | null}
-                    onAjouter={() => {
-                      const dernier = (sprintsQuery.data ?? [])[(sprintsQuery.data?.length ?? 1) - 1];
-                      const ordre = (sprintsQuery.data?.length ?? 0) + 1;
-                      const debut = dernier ? lendemain(dernier.date_fin) : iso(annee, 0, 1);
-                      mutationAjouterSprint.mutate({ nom: `Sprint ${ordre}`, date_debut: debut, date_fin: debut, ordre });
-                    }}
-                    onModifier={(id, champs) => mutationModifierSprint.mutate({ id, champs })}
-                    onSupprimer={(id) => mutationSupprimerSprint.mutate(id)}
-                  />
-
                   <div className="rounded-lg border bg-card">
                     <div className="px-4 py-3">
                       <h2 className="text-sm font-semibold">Capacité par sprint</h2>
                       <p className="text-xs text-muted-foreground">
-                        Jours-homme disponibles par personne, sur la période de chaque sprint.
+                        Jours-homme disponibles par personne, sur la période de chaque sprint. Cliquez
+                        sur le nom ou les dates d&apos;un sprint pour les modifier, ou sur « + » pour en
+                        ajouter un.
                       </p>
                     </div>
                     {sprintsQuery.isLoading || jours.isLoading ? (
                       <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
-                    ) : (sprintsQuery.data?.length ?? 0) === 0 ? (
-                      <p className="px-4 py-6 text-sm text-muted-foreground">
-                        Aucun sprint défini. Ajoutez-en un ci-dessus.
+                    ) : sprintsQuery.isError ? (
+                      <p className="px-4 py-6 text-sm text-destructive">
+                        Impossible de charger les sprints : {(sprintsQuery.error as Error).message}
                       </p>
                     ) : (
                       <TableauCapacite
@@ -625,6 +612,20 @@ function Planning() {
                         sprints={sprintsQuery.data ?? []}
                         jours={jours.data ?? []}
                         speciaux={referentiel.data?.speciaux ?? []}
+                        onAjouterSprint={() => {
+                          const liste = sprintsQuery.data ?? [];
+                          const dernier = liste[liste.length - 1];
+                          const ordre = liste.length + 1;
+                          const debut = dernier ? lendemain(dernier.date_fin) : iso(annee, 0, 1);
+                          mutationAjouterSprint.mutate({
+                            nom: `Sprint ${ordre}`,
+                            date_debut: debut,
+                            date_fin: debut,
+                            ordre,
+                          });
+                        }}
+                        onModifierSprint={(id, champs) => mutationModifierSprint.mutate({ id, champs })}
+                        onSupprimerSprint={(id) => mutationSupprimerSprint.mutate(id)}
                       />
                     )}
                     <div className="border-t px-4 py-3 text-xs text-muted-foreground">
@@ -854,137 +855,22 @@ function SaisieJoursClient({
 
 // Table capacité/vélocité (jours-homme par sprint) pour un type donné
 // (réel ou prévisionnel), avec une ligne Total équipe.
-function SectionSprints({
-  sprints,
-  isLoading,
-  isError,
-  error,
-  onAjouter,
-  onModifier,
-  onSupprimer,
-}: {
-  sprints: Sprint[];
-  isLoading: boolean;
-  isError: boolean;
-  error: Error | null;
-  onAjouter: () => void;
-  onModifier: (id: string, champs: Partial<Pick<Sprint, "nom" | "date_debut" | "date_fin">>) => void;
-  onSupprimer: (id: string) => void;
-}) {
-  return (
-    <div className="rounded-lg border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
-        <div>
-          <h2 className="text-sm font-semibold">Sprints</h2>
-          <p className="text-xs text-muted-foreground">
-            Ajoutez, renommez, modifiez les dates ou supprimez un sprint.
-          </p>
-        </div>
-        <Button size="sm" variant="outline" onClick={onAjouter}>
-          <Plus className="size-4" /> Ajouter un sprint
-        </Button>
-      </div>
-      {isLoading ? (
-        <p className="px-4 pb-4 text-sm text-muted-foreground">Chargement…</p>
-      ) : isError ? (
-        <p className="px-4 pb-4 text-sm text-destructive">
-          Impossible de charger les sprints : {error?.message}
-        </p>
-      ) : sprints.length === 0 ? (
-        <p className="px-4 pb-4 text-sm text-muted-foreground">
-          Aucun sprint. Cliquez sur « Ajouter un sprint ».
-        </p>
-      ) : (
-        <div className="overflow-x-auto border-t">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr>
-                <th className="border-b px-3 py-2 text-left font-medium">Sprint</th>
-                <th className="border-b border-l px-3 py-2 text-left font-medium">Début</th>
-                <th className="border-b border-l px-3 py-2 text-left font-medium">Fin</th>
-                <th className="border-b border-l px-3 py-2 text-left font-medium" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {sprints.map((s) => (
-                <LigneSprint key={s.id} sprint={s} onModifier={onModifier} onSupprimer={onSupprimer} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LigneSprint({
-  sprint,
-  onModifier,
-  onSupprimer,
-}: {
-  sprint: Sprint;
-  onModifier: (id: string, champs: Partial<Pick<Sprint, "nom" | "date_debut" | "date_fin">>) => void;
-  onSupprimer: (id: string) => void;
-}) {
-  const [nom, setNom] = useState(sprint.nom);
-  useEffect(() => setNom(sprint.nom), [sprint.nom]);
-
-  return (
-    <tr className="hover:bg-accent/40">
-      <td className="border-b px-3 py-1.5">
-        <input
-          className="w-32 rounded border bg-transparent px-2 py-1 text-sm"
-          value={nom}
-          onChange={(e) => setNom(e.target.value)}
-          onBlur={() => {
-            const propre = nom.trim();
-            if (propre && propre !== sprint.nom) onModifier(sprint.id, { nom: propre });
-            else setNom(sprint.nom);
-          }}
-        />
-      </td>
-      <td className="border-b border-l px-3 py-1.5">
-        <input
-          type="date"
-          className="rounded border bg-transparent px-2 py-1 text-sm"
-          value={sprint.date_debut}
-          onChange={(e) => e.target.value && onModifier(sprint.id, { date_debut: e.target.value })}
-        />
-      </td>
-      <td className="border-b border-l px-3 py-1.5">
-        <input
-          type="date"
-          className="rounded border bg-transparent px-2 py-1 text-sm"
-          value={sprint.date_fin}
-          onChange={(e) => e.target.value && onModifier(sprint.id, { date_fin: e.target.value })}
-        />
-      </td>
-      <td className="border-b border-l px-2 py-1.5 text-right">
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={`Supprimer ${sprint.nom}`}
-          onClick={() => {
-            if (window.confirm(`Supprimer ${sprint.nom} ?`)) onSupprimer(sprint.id);
-          }}
-        >
-          <Trash2 className="size-4 text-destructive" />
-        </Button>
-      </td>
-    </tr>
-  );
-}
-
 function TableauCapacite({
   membres,
   sprints,
   jours,
   speciaux,
+  onAjouterSprint,
+  onModifierSprint,
+  onSupprimerSprint,
 }: {
   membres: Membre[];
   sprints: Sprint[];
   jours: Jour[];
   speciaux: JourSpecial[];
+  onAjouterSprint: () => void;
+  onModifierSprint: (id: string, champs: Partial<Pick<Sprint, "nom" | "date_debut" | "date_fin">>) => void;
+  onSupprimerSprint: (id: string) => void;
 }) {
   const detailParMembre = useMemo(() => {
     const map = new Map<string, DetailCapacite[]>();
@@ -997,10 +883,6 @@ function TableauCapacite({
     return map;
   }, [membres, sprints, jours, speciaux]);
 
-  if (membres.length === 0) {
-    return <p className="px-4 py-4 text-xs text-muted-foreground">Aucune personne à afficher.</p>;
-  }
-
   const totalParSprint = sprints.map((_, i) =>
     membres.reduce((s, m) => s + (detailParMembre.get(m.id)?.[i]?.capacite ?? 0), 0),
   );
@@ -1010,53 +892,135 @@ function TableauCapacite({
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr>
-            <th className="sticky left-0 z-10 min-w-48 border-b bg-card px-3 py-2 text-left font-medium">
+            <th className="sticky left-0 z-10 min-w-48 border-b bg-card px-3 py-2 text-left align-bottom font-medium">
               Personne
             </th>
             {sprints.map((s) => (
-              <th key={s.id} className="border-b border-l px-2 py-1 text-center font-medium">
-                {s.nom}
-              </th>
+              <EnteteSprint key={s.id} sprint={s} onModifier={onModifierSprint} onSupprimer={onSupprimerSprint} />
             ))}
-            <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
+            <th className="border-b border-l px-2 py-1 text-center align-middle">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Ajouter un sprint"
+                onClick={onAjouterSprint}
+              >
+                <Plus className="size-4" />
+              </Button>
+            </th>
+            <th className="border-b border-l bg-muted/60 px-2 py-1 text-center align-bottom font-medium">
+              Total
+            </th>
           </tr>
         </thead>
         <tbody>
-          {membres.map((m) => {
-            const details = detailParMembre.get(m.id) ?? [];
-            const total = details.reduce((s, d) => s + d.capacite, 0);
-            return (
-              <tr key={m.id} className="hover:bg-accent/40">
-                <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">{m.nom}</td>
-                {details.map((d, i) => (
-                  <td
-                    key={i}
-                    className="border-b border-l px-2 py-1 text-center font-mono"
-                    title={`${formatNombre(d.joursOuvres)} j ouvrés − ${formatNombre(d.congesValides)} j congé validé = ${formatNombre(d.capacite)}`}
-                  >
-                    {formatNombre(d.capacite)}
-                  </td>
-                ))}
-                <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
-                  {formatNombre(total)}
-                </td>
-              </tr>
-            );
-          })}
-          <tr className="bg-muted/60 font-semibold">
-            <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">Total équipe</td>
-            {totalParSprint.map((v, i) => (
-              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
-                {formatNombre(v)}
+          {membres.length === 0 ? (
+            <tr>
+              <td colSpan={sprints.length + 3} className="px-3 py-4 text-center text-muted-foreground">
+                Aucune personne à afficher.
               </td>
-            ))}
-            <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
-              {formatNombre(totalParSprint.reduce((s, v) => s + v, 0))}
-            </td>
-          </tr>
+            </tr>
+          ) : (
+            membres.map((m) => {
+              const details = detailParMembre.get(m.id) ?? [];
+              const total = details.reduce((s, d) => s + d.capacite, 0);
+              return (
+                <tr key={m.id} className="hover:bg-accent/40">
+                  <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">{m.nom}</td>
+                  {details.map((d, i) => (
+                    <td
+                      key={i}
+                      className="border-b border-l px-2 py-1 text-center font-mono"
+                      title={`${formatNombre(d.joursOuvres)} j ouvrés − ${formatNombre(d.congesValides)} j congé validé = ${formatNombre(d.capacite)}`}
+                    >
+                      {formatNombre(d.capacite)}
+                    </td>
+                  ))}
+                  <td className="border-b border-l px-2 py-1" />
+                  <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                    {formatNombre(total)}
+                  </td>
+                </tr>
+              );
+            })
+          )}
+          {sprints.length > 0 && (
+            <tr className="bg-muted/60 font-semibold">
+              <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">Total équipe</td>
+              {totalParSprint.map((v, i) => (
+                <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+                  {formatNombre(v)}
+                </td>
+              ))}
+              <td className="border-t border-l px-2 py-1" />
+              <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+                {formatNombre(totalParSprint.reduce((s, v) => s + v, 0))}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
+      {sprints.length === 0 && (
+        <p className="px-3 py-4 text-xs text-muted-foreground">
+          Aucun sprint défini. Cliquez sur « + » pour en ajouter un.
+        </p>
+      )}
     </div>
+  );
+}
+
+function EnteteSprint({
+  sprint,
+  onModifier,
+  onSupprimer,
+}: {
+  sprint: Sprint;
+  onModifier: (id: string, champs: Partial<Pick<Sprint, "nom" | "date_debut" | "date_fin">>) => void;
+  onSupprimer: (id: string) => void;
+}) {
+  const [nom, setNom] = useState(sprint.nom);
+  useEffect(() => setNom(sprint.nom), [sprint.nom]);
+
+  return (
+    <th className="min-w-[150px] border-b border-l px-1.5 py-1.5 text-center align-top font-medium">
+      <div className="flex items-center justify-center gap-1">
+        <input
+          className="min-w-0 flex-1 rounded border bg-transparent px-1 py-0.5 text-center text-xs font-medium"
+          value={nom}
+          title={nom}
+          onChange={(e) => setNom(e.target.value)}
+          onBlur={() => {
+            const propre = nom.trim();
+            if (propre && propre !== sprint.nom) onModifier(sprint.id, { nom: propre });
+            else setNom(sprint.nom);
+          }}
+        />
+        <button
+          type="button"
+          aria-label={`Supprimer ${sprint.nom}`}
+          className="shrink-0 text-muted-foreground hover:text-destructive"
+          onClick={() => {
+            if (window.confirm(`Supprimer ${sprint.nom} ?`)) onSupprimer(sprint.id);
+          }}
+        >
+          <Trash2 className="size-3" />
+        </button>
+      </div>
+      <div className="mt-1 flex flex-col items-center gap-0.5">
+        <input
+          type="date"
+          className="w-full rounded border bg-transparent px-1 py-0.5 text-center text-[10px] font-normal"
+          value={sprint.date_debut}
+          onChange={(e) => e.target.value && onModifier(sprint.id, { date_debut: e.target.value })}
+        />
+        <input
+          type="date"
+          className="w-full rounded border bg-transparent px-1 py-0.5 text-center text-[10px] font-normal"
+          value={sprint.date_fin}
+          onChange={(e) => e.target.value && onModifier(sprint.id, { date_fin: e.target.value })}
+        />
+      </div>
+    </th>
   );
 }
 
