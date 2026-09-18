@@ -640,44 +640,28 @@ function Planning() {
 
                   <div className="rounded-lg border bg-card">
                     <div className="px-4 py-3">
-                      <h2 className="text-sm font-semibold">Répartition des tâches</h2>
+                      <h2 className="text-sm font-semibold">% de répartition des tâches</h2>
                       <p className="text-xs text-muted-foreground">
-                        Part de la capacité totale de l&apos;équipe consacrée à chaque type de tâche.
-                      </p>
-                    </div>
-                    {repartitionQuery.isLoading ? (
-                      <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
-                    ) : (
-                      <TableauRepartition
-                        taches={repartitionQuery.data ?? []}
-                        onModifierPourcentage={(id, pourcentage) =>
-                          mutationPourcentageTache.mutate({ id, pourcentage })
-                        }
-                      />
-                    )}
-                  </div>
-
-                  <div className="rounded-lg border bg-card">
-                    <div className="px-4 py-3">
-                      <h2 className="text-sm font-semibold">Chiffrage par sprint (jours-homme)</h2>
-                      <p className="text-xs text-muted-foreground">
-                        Pour chaque type de tâche : % de répartition × capacité totale de l&apos;équipe
-                        sur le sprint.
+                        Pourcentage éditable par type de tâche, et jours-homme par sprint (% ×
+                        capacité totale de l&apos;équipe sur le sprint).
                       </p>
                     </div>
                     {sprintsQuery.isLoading || repartitionQuery.isLoading || jours.isLoading ? (
                       <p className="px-4 py-6 text-sm text-muted-foreground">Chargement…</p>
                     ) : (sprintsQuery.data?.length ?? 0) === 0 ? (
                       <p className="px-4 py-6 text-sm text-muted-foreground">
-                        Aucun sprint défini.
+                        Aucun sprint défini. Ajoutez-en un dans le tableau de capacité ci-dessus.
                       </p>
                     ) : (
-                      <TableauTachesParSprint
+                      <TableauRepartitionTaches
                         taches={repartitionQuery.data ?? []}
                         sprints={sprintsQuery.data ?? []}
                         membres={membresFiltres}
                         jours={jours.data ?? []}
                         speciaux={referentiel.data?.speciaux ?? []}
+                        onModifierPourcentage={(id, pourcentage) =>
+                          mutationPourcentageTache.mutate({ id, pourcentage })
+                        }
                       />
                     )}
                   </div>
@@ -1024,36 +1008,116 @@ function EnteteSprint({
   );
 }
 
-function TableauRepartition({
+function TableauRepartitionTaches({
   taches,
+  sprints,
+  membres,
+  jours,
+  speciaux,
   onModifierPourcentage,
 }: {
   taches: TacheRepartition[];
+  sprints: Sprint[];
+  membres: Membre[];
+  jours: Jour[];
+  speciaux: JourSpecial[];
   onModifierPourcentage: (id: string, pourcentage: number) => void;
 }) {
+  const capaciteParSprint = useMemo(
+    () =>
+      sprints.map((s) =>
+        membres.reduce(
+          (total, m) => total + calculerCapacite(m.id, s.date_debut, s.date_fin, jours, speciaux).capacite,
+          0,
+        ),
+      ),
+    [sprints, membres, jours, speciaux],
+  );
+
+  const valeursParTache = useMemo(() => {
+    const map = new Map<string, number[]>();
+    for (const t of taches) map.set(t.id, capaciteParSprint.map((c) => (t.pourcentage / 100) * c));
+    return map;
+  }, [taches, capaciteParSprint]);
+
   if (taches.length === 0) {
     return <p className="px-4 py-4 text-xs text-muted-foreground">Aucun type de tâche défini.</p>;
   }
-  const total = taches.reduce((s, t) => s + t.pourcentage, 0);
-  const totalArrondi = Math.round(total * 100) / 100;
+
+  const totalPourcentage = Math.round(taches.reduce((s, t) => s + t.pourcentage, 0) * 100) / 100;
+  const tacheUS = taches.find((t) => t.nom.trim().toUpperCase() === "US");
+  const valeursSaufUS = capaciteParSprint.map((_, i) => {
+    const totalTaches = taches.reduce((s, t) => s + (valeursParTache.get(t.id)?.[i] ?? 0), 0);
+    const us = tacheUS ? (valeursParTache.get(tacheUS.id)?.[i] ?? 0) : 0;
+    return totalTaches - us;
+  });
+  const pourcentageSaufUS = Math.round((totalPourcentage - (tacheUS?.pourcentage ?? 0)) * 100) / 100;
+  const classeTotal = totalPourcentage === 100 ? "bg-muted/60" : "bg-destructive/10";
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full border-collapse text-xs">
         <thead>
           <tr>
-            <th className="border-b px-3 py-2 text-left font-medium">Type de tâche</th>
-            <th className="border-b border-l px-3 py-2 text-center font-medium">% de la capacité</th>
+            <th className="sticky left-0 z-10 min-w-40 border-b bg-card px-3 py-2 text-left font-medium">
+              Type de tâche
+            </th>
+            <th className="border-b border-l px-2 py-1 text-center font-medium">%</th>
+            {sprints.map((s) => (
+              <th key={s.id} className="border-b border-l px-2 py-1 text-center font-medium">
+                {s.nom}
+              </th>
+            ))}
+            <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
           </tr>
         </thead>
         <tbody>
-          {taches.map((t) => (
-            <LignePourcentage key={t.id} tache={t} onModifier={onModifierPourcentage} />
-          ))}
-          <tr className={totalArrondi === 100 ? "bg-muted/60 font-semibold" : "bg-destructive/10 font-semibold"}>
-            <td className="border-t px-3 py-1.5">Total</td>
-            <td className="border-t border-l px-3 py-1.5 text-center font-mono">
-              {formatNombre(totalArrondi)} %{totalArrondi !== 100 ? " (devrait faire 100 %)" : ""}
+          {taches.map((t) => {
+            const valeurs = valeursParTache.get(t.id) ?? [];
+            const total = valeurs.reduce((s, v) => s + v, 0);
+            return (
+              <tr key={t.id} className="hover:bg-accent/40">
+                <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">{t.nom}</td>
+                <td className="border-b border-l px-1 py-1 text-center">
+                  <ChampPourcentage tache={t} onModifier={onModifierPourcentage} />
+                </td>
+                {valeurs.map((v, i) => (
+                  <td key={i} className="border-b border-l px-2 py-1 text-center font-mono">
+                    {formatNombre(v)}
+                  </td>
+                ))}
+                <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
+                  {formatNombre(total)}
+                </td>
+              </tr>
+            );
+          })}
+          <tr className="bg-muted/40 font-medium">
+            <td className="sticky left-0 z-10 border-t bg-muted/40 px-3 py-1.5">TT tous sauf US</td>
+            <td className="border-t border-l px-2 py-1 text-center font-mono">
+              {formatNombre(pourcentageSaufUS)} %
+            </td>
+            {valeursSaufUS.map((v, i) => (
+              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+                {formatNombre(v)}
+              </td>
+            ))}
+            <td className="border-t border-l bg-muted/60 px-2 py-1 text-center font-mono">
+              {formatNombre(valeursSaufUS.reduce((s, v) => s + v, 0))}
+            </td>
+          </tr>
+          <tr className={`${classeTotal} font-semibold`}>
+            <td className={`sticky left-0 z-10 border-t px-3 py-1.5 ${classeTotal}`}>TT tout</td>
+            <td className="border-t border-l px-2 py-1 text-center font-mono">
+              {formatNombre(totalPourcentage)} %{totalPourcentage !== 100 ? " (≠ 100 %)" : ""}
+            </td>
+            {capaciteParSprint.map((v, i) => (
+              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
+                {formatNombre(v)}
+              </td>
+            ))}
+            <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
+              {formatNombre(capaciteParSprint.reduce((s, v) => s + v, 0))}
             </td>
           </tr>
         </tbody>
@@ -1062,7 +1126,7 @@ function TableauRepartition({
   );
 }
 
-function LignePourcentage({
+function ChampPourcentage({
   tache,
   onModifier,
 }: {
@@ -1083,104 +1147,15 @@ function LignePourcentage({
   }
 
   return (
-    <tr className="hover:bg-accent/40">
-      <td className="border-b px-3 py-1.5">{tache.nom}</td>
-      <td className="border-b border-l px-2 py-1 text-center">
-        <input
-          className="w-20 rounded border bg-transparent px-2 py-1 text-center font-mono text-sm"
-          inputMode="decimal"
-          value={texte}
-          onChange={(e) => setTexte(e.target.value)}
-          onBlur={valider}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-          }}
-        />{" "}
-        %
-      </td>
-    </tr>
-  );
-}
-
-function TableauTachesParSprint({
-  taches,
-  sprints,
-  membres,
-  jours,
-  speciaux,
-}: {
-  taches: TacheRepartition[];
-  sprints: Sprint[];
-  membres: Membre[];
-  jours: Jour[];
-  speciaux: JourSpecial[];
-}) {
-  const capaciteParSprint = useMemo(
-    () =>
-      sprints.map((s) =>
-        membres.reduce(
-          (total, m) => total + calculerCapacite(m.id, s.date_debut, s.date_fin, jours, speciaux).capacite,
-          0,
-        ),
-      ),
-    [sprints, membres, jours, speciaux],
-  );
-
-  if (taches.length === 0) {
-    return <p className="px-4 py-4 text-xs text-muted-foreground">Aucun type de tâche défini.</p>;
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-xs">
-        <thead>
-          <tr>
-            <th className="sticky left-0 z-10 min-w-40 border-b bg-card px-3 py-2 text-left font-medium">
-              Type de tâche
-            </th>
-            {sprints.map((s) => (
-              <th key={s.id} className="border-b border-l px-2 py-1 text-center font-medium">
-                {s.nom}
-              </th>
-            ))}
-            <th className="border-b border-l bg-muted/60 px-2 py-1 text-center font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {taches.map((t) => {
-            const valeurs = capaciteParSprint.map((c) => (t.pourcentage / 100) * c);
-            const total = valeurs.reduce((s, v) => s + v, 0);
-            return (
-              <tr key={t.id} className="hover:bg-accent/40">
-                <td className="sticky left-0 z-10 border-b bg-card px-3 py-1.5 font-medium">
-                  {t.nom} <span className="text-muted-foreground">({formatNombre(t.pourcentage)} %)</span>
-                </td>
-                {valeurs.map((v, i) => (
-                  <td key={i} className="border-b border-l px-2 py-1 text-center font-mono">
-                    {formatNombre(v)}
-                  </td>
-                ))}
-                <td className="border-b border-l bg-muted/40 px-2 py-1 text-center font-mono font-medium">
-                  {formatNombre(total)}
-                </td>
-              </tr>
-            );
-          })}
-          <tr className="bg-muted/60 font-semibold">
-            <td className="sticky left-0 z-10 border-t bg-muted/60 px-3 py-1.5">
-              Total (= capacité équipe)
-            </td>
-            {capaciteParSprint.map((v, i) => (
-              <td key={i} className="border-t border-l px-2 py-1 text-center font-mono">
-                {formatNombre(v)}
-              </td>
-            ))}
-            <td className="border-t border-l bg-muted px-2 py-1 text-center font-mono">
-              {formatNombre(capaciteParSprint.reduce((s, v) => s + v, 0))}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <input
+      className="w-14 min-w-0 rounded border bg-transparent px-1 py-0.5 text-center font-mono text-xs"
+      inputMode="decimal"
+      value={texte}
+      onChange={(e) => setTexte(e.target.value)}
+      onBlur={valider}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+      }}
+    />
   );
 }
