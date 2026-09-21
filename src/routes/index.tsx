@@ -70,9 +70,20 @@ const ANNEE_DEFAUT = 2026;
 // sprint restent alignées verticalement (même grille, même défilement).
 const LARGEUR_LABEL = 176;
 const LARGEUR_SECONDAIRE = 64;
-const LARGEUR_SPRINT = 150;
+// 192px : largeur minimale requise par les deux champs date empilés dans
+// l'en-tête du tableau "Capacité par sprint" (le navigateur ne les
+// laisse pas rétrécir en dessous, même avec un tableau à colonnes fixes).
+const LARGEUR_SPRINT = 192;
 const LARGEUR_SUPPLEMENT = 56;
 const LARGEUR_TOTAL = 88;
+
+// Largeur totale explicite du tableau (nécessaire en plus du colgroup : un
+// <table> en table-layout fixed avec width:auto ne grandit pas toujours de
+// façon fiable au-delà de son conteneur quand plusieurs tableaux du même
+// gabarit se suivent dans une même zone de défilement).
+function largeurTableauSprints(nbSprints: number) {
+  return LARGEUR_LABEL + LARGEUR_SECONDAIRE + nbSprints * LARGEUR_SPRINT + LARGEUR_SUPPLEMENT + LARGEUR_TOTAL;
+}
 
 function Planning() {
   const queryClient = useQueryClient();
@@ -872,7 +883,10 @@ function TableauCapacite({
   );
 
   return (
-    <table className="border-collapse text-xs" style={{ tableLayout: "fixed" }}>
+    <table
+      className="border-collapse text-xs"
+      style={{ tableLayout: "fixed", width: largeurTableauSprints(sprints.length) }}
+    >
       <colgroup>
         <col style={{ width: LARGEUR_LABEL }} />
         <col style={{ width: LARGEUR_SECONDAIRE }} />
@@ -1057,7 +1071,10 @@ function TableauRepartitionTaches({
   const classeTotal = totalPourcentage === 100 ? "bg-muted/60" : "bg-destructive/10";
 
   return (
-    <table className="border-collapse text-xs" style={{ tableLayout: "fixed" }}>
+    <table
+      className="border-collapse text-xs"
+      style={{ tableLayout: "fixed", width: largeurTableauSprints(sprints.length) }}
+    >
       <colgroup>
         <col style={{ width: LARGEUR_LABEL }} />
         <col style={{ width: LARGEUR_SECONDAIRE }} />
